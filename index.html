@@ -1,0 +1,3126 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>投資理財管理系統</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://apis.google.com/js/api.js" async defer></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0f1f3d;--navy-light:#1a2f52;--navy-mid:#243a63;
+  --gold:#c9a84c;--gold-light:#e8c97a;--gold-pale:#faf4e4;
+  --text:#1a1a2e;--text-muted:#5a6478;--text-light:#8892a4;
+  --bg:#f5f6fa;--surface:#ffffff;--surface2:#f0f2f8;
+  --border:#e0e4ef;--border-light:#edf0f7;
+  --green:#1a7a4a;--green-bg:#e8f7ef;
+  --red:#c0392b;--red-bg:#fdecea;
+  --radius:8px;--radius-lg:12px;
+  --shadow:0 2px 8px rgba(15,31,61,0.08);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;font-size:14px}
+
+/* Sidebar */
+#sidebar{width:220px;min-width:220px;background:var(--navy);display:flex;flex-direction:column;min-height:100vh;transition:width 0.2s}
+#sidebar.collapsed{width:60px;min-width:60px}
+.brand{padding:20px 16px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,0.08)}
+.brand-icon{width:32px;height:32px;background:var(--gold);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.brand-icon i{color:var(--navy);font-size:18px}
+.brand-text{color:#fff;font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden}
+nav{flex:1;padding:12px 8px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius);color:rgba(255,255,255,0.65);cursor:pointer;transition:all 0.15s;margin-bottom:2px;white-space:nowrap;overflow:hidden}
+.nav-item:hover{background:rgba(255,255,255,0.08);color:#fff}
+.nav-item.active{background:var(--gold);color:var(--navy);font-weight:600}
+.nav-item i{font-size:18px;flex-shrink:0}
+.nav-label{font-size:13px}
+.sidebar-footer{padding:12px 8px;border-top:1px solid rgba(255,255,255,0.08)}
+#toggle-sidebar{background:none;border:none;color:rgba(255,255,255,0.5);cursor:pointer;padding:8px 12px;border-radius:var(--radius);display:flex;align-items:center;gap:8px;width:100%}
+#toggle-sidebar:hover{color:#fff}
+
+/* Main */
+#main{flex:1;display:flex;flex-direction:column;min-width:0}
+#topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+
+/* Sync bar */
+#syncbar{background:var(--surface);border-bottom:1px solid var(--border);padding:5px 24px;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-muted);min-height:32px}
+#syncbar.syncing{background:#fffbeb}
+#syncbar.error{background:#fff1f0}
+.sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sync-dot.connected{background:var(--green)}
+.sync-dot.disconnected{background:#9ca3af}
+.sync-dot.syncing{background:var(--gold);animation:syncpulse 1s infinite}
+.sync-dot.error{background:var(--red)}
+@keyframes syncpulse{0%,100%{opacity:0.3}50%{opacity:1}}
+.sync-actions{margin-left:auto;display:flex;gap:6px}
+
+.topbar-title{font-size:16px;font-weight:600;color:var(--navy)}
+.topbar-actions{display:flex;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;cursor:pointer;font-weight:500;transition:all 0.15s}
+.btn:hover{background:var(--surface2);border-color:var(--navy)}
+.btn-primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn-primary:hover{background:var(--navy-light)}
+.btn-gold{background:var(--gold);color:var(--navy);border-color:var(--gold);font-weight:600}
+.btn-gold:hover{background:var(--gold-light)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-danger{background:var(--red-bg);color:var(--red);border-color:var(--red)}
+.btn-danger:hover{background:var(--red);color:#fff}
+.btn-success{background:var(--green-bg);color:var(--green);border-color:var(--green)}
+
+#content{flex:1;padding:24px;overflow-y:auto}
+.page{display:none}
+.page.active{display:block}
+
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-title{font-size:15px;font-weight:600;color:var(--navy);display:flex;align-items:center;gap:8px}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.stat-card{background:var(--surface2);border-radius:var(--radius);padding:14px 16px}
+.stat-label{font-size:12px;color:var(--text-muted);margin-bottom:4px}
+.stat-value{font-size:20px;font-weight:600;color:var(--navy)}
+.stat-value.pos{color:var(--green)}
+.stat-value.neg{color:var(--red)}
+.stat-sub{font-size:11px;color:var(--text-light);margin-top:2px}
+
+/* Table */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 12px;background:var(--surface2);color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid var(--border-light);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface2)}
+.td-right{text-align:right}
+.td-center{text-align:center}
+.tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.tag-in{background:var(--green-bg);color:var(--green)}
+.tag-out{background:var(--red-bg);color:var(--red)}
+.tag-interest{background:#e8f4fd;color:#0e6fa8}
+.tag-dividend{background:#f0e8fd;color:#6a20b0}
+.tag-spot{background:#fff3e0;color:#8a5000}
+.tag-cash{background:#e8f5e9;color:#2e7d32}
+.pos{color:var(--green);font-weight:500}
+.neg{color:var(--red);font-weight:500}
+
+/* Form */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:12px;font-weight:500;color:var(--text-muted)}
+.form-group input,.form-group select,.form-group textarea{padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text);background:var(--surface);font-family:inherit;transition:border-color 0.15s}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--navy)}
+
+/* Modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center;padding:16px}
+.modal-bg.show{display:flex}
+.modal{background:var(--surface);border-radius:var(--radius-lg);width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.18)}
+.modal-header{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:15px;font-weight:600;color:var(--navy)}
+.modal-body{padding:20px}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+
+/* Responsive */
+@media(max-width:768px){
+  #sidebar{width:60px;min-width:60px}
+  .nav-label,.brand-text{display:none}
+  .brand{justify-content:center}
+  #content{padding:16px}
+  .stat-grid{grid-template-columns:1fr 1fr}
+  .topbar-title{font-size:14px}
+}
+
+/* Bank tabs */
+.bank-tabs{display:flex;gap:0;overflow-x:auto;border-bottom:2px solid var(--border);margin-bottom:16px;flex-wrap:nowrap}
+.bank-tab{padding:8px 16px;font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:all 0.15s;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.bank-tab:hover{color:var(--navy);background:var(--surface2)}
+.bank-tab.active{color:var(--navy);border-bottom-color:var(--gold);font-weight:600}
+.bank-tab.add-tab{color:var(--gold);font-weight:600}
+.bank-tab.add-tab:hover{background:var(--gold-pale)}
+.bank-tab .tab-balance{font-size:11px;color:var(--text-muted);font-weight:400}
+.bank-tab.active .tab-balance{color:var(--navy)}
+.bank-rename-btn{background:none;border:none;cursor:pointer;color:var(--text-muted);padding:2px 4px;border-radius:4px;font-size:12px;margin-left:2px}
+.bank-rename-btn:hover{color:var(--red);background:var(--red-bg)}
+
+/* Toast */
+#toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:#fff;padding:10px 18px;border-radius:var(--radius);font-size:13px;z-index:9999;opacity:0;transition:opacity 0.3s;pointer-events:none}
+#toast.show{opacity:1}
+
+/* Multi-select */
+#select-bar{display:none;position:fixed;bottom:0;left:220px;right:0;background:var(--navy);color:#fff;padding:10px 24px;z-index:200;align-items:center;gap:12px;box-shadow:0 -4px 16px rgba(0,0,0,0.2);transition:left 0.2s}
+#select-bar.show{display:flex}
+#sidebar.collapsed ~ #main #select-bar{left:60px}
+.select-bar-info{font-size:13px}
+.select-bar-info strong{color:var(--gold-light)}
+input[type=checkbox].row-cb{width:15px;height:15px;cursor:pointer;accent-color:var(--gold);flex-shrink:0}
+th.cb-th{width:36px;text-align:center}
+td.cb-td{width:36px;text-align:center;vertical-align:middle}
+tr.row-selected td{background:rgba(201,168,76,0.08)!important}
+tr.row-selected td:first-child{border-left:3px solid var(--gold)}
+
+/* ===== 股票交易頁（股倉）— 樣式全部限定在 #page-stock，並對應系統淺色主題 ===== */
+#page-stock{
+  --panel:#ffffff; --panel-2:#f0f2f8; --border:#e0e4ef;
+  --accent:#c9a84c; --accent-ink:#0f1f3d;
+  --up:#d6343b; --down:#1a8f55;
+  --text:#1a1a2e; --text-dim:#5a6478; --text-faint:#8892a4;
+  --mono:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;
+  --display:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;
+  --body:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;
+  --radius:12px;
+}
+#page-stock .summary-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin:0 0 12px;}
+@media (max-width:1000px){#page-stock .summary-grid{grid-template-columns:repeat(3,1fr);}}
+@media (max-width:640px){#page-stock .summary-grid{grid-template-columns:repeat(2,1fr);}}
+#page-stock .summary-card{background:var(--panel-2);border-radius:8px;padding:14px 16px;}
+#page-stock .summary-card .k{font-size:12px;color:var(--text-dim);margin-bottom:4px;}
+#page-stock .summary-card .v{font-size:20px;font-weight:600;color:var(--navy);font-variant-numeric:tabular-nums;}
+#page-stock .summary-card .v.up{color:var(--up);}
+#page-stock .summary-card .v.down{color:var(--down);}
+#page-stock .summary-card .sub{font-size:11px;color:var(--text-light);margin-top:2px;font-variant-numeric:tabular-nums;}
+#page-stock .summary-grid-2{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:0 0 16px;}
+@media (max-width:640px){#page-stock .summary-grid-2{grid-template-columns:1fr;}}
+
+#page-stock .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;}
+#page-stock .tabs{display:flex;gap:4px;}
+#page-stock .tab{font-size:14px;font-weight:500;padding:8px 16px;border-radius:8px;cursor:pointer;color:var(--text-dim);border:1px solid transparent;}
+#page-stock .tab:hover{background:var(--panel-2);color:var(--navy);}
+#page-stock .tab.active{background:var(--gold-pale);color:var(--navy);border-color:var(--gold);font-weight:600;}
+
+#page-stock .btn{font-family:var(--body);font-size:13px;padding:7px 14px;border-radius:8px;background:var(--surface);color:var(--text);border:1px solid var(--border);cursor:pointer;white-space:nowrap;}
+#page-stock .btn:hover{background:var(--panel-2);border-color:var(--navy);}
+#page-stock .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600;}
+#page-stock .btn.primary:hover{background:var(--gold-light);}
+#page-stock .btn:disabled{opacity:.5;cursor:wait;}
+
+#page-stock .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px;box-shadow:var(--shadow);}
+
+#page-stock #txForm{display:none;}
+#page-stock #txForm.show{display:block;}
+#page-stock .form-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;align-items:end;margin-bottom:0;}
+@media (max-width:900px){#page-stock .form-grid{grid-template-columns:repeat(2,1fr);}}
+#page-stock .field{margin-bottom:0;}
+#page-stock .field label{display:block;font-size:12px;font-weight:500;color:var(--text-dim);margin-bottom:4px;}
+#page-stock .field input,#page-stock .field select{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 10px;font-family:var(--body);font-size:13px;outline:none;}
+#page-stock .field input:focus,#page-stock .field select:focus{border-color:var(--navy);}
+#page-stock .field input:disabled{opacity:.55;cursor:not-allowed;}
+
+#page-stock table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;}
+#page-stock thead th{text-align:right;font-size:12px;color:var(--text-dim);font-weight:500;padding:8px 10px;background:var(--panel-2);border-bottom:1px solid var(--border);white-space:nowrap;}
+#page-stock thead th:first-child,#page-stock thead th:nth-child(2){text-align:left;}
+#page-stock tbody td{padding:10px;text-align:right;border-bottom:1px solid var(--border-light);white-space:nowrap;}
+#page-stock tbody td:first-child,#page-stock tbody td:nth-child(2){text-align:left;}
+#page-stock tbody tr{cursor:pointer;}
+#page-stock tbody tr:hover td{background:var(--panel-2);}
+#page-stock .code{font-weight:700;color:var(--navy);}
+#page-stock .up{color:var(--up);}
+#page-stock .down{color:var(--down);}
+#page-stock .empty{padding:30px;text-align:center;color:var(--text-faint);font-size:13px;}
+#page-stock .table-scroll{overflow-x:auto;}
+#page-stock th.sortable{cursor:pointer;user-select:none;}
+#page-stock th.sortable:hover{color:var(--navy);}
+#page-stock th.sortable .arrow{color:var(--gold);margin-left:3px;}
+
+/* 橫向捲動時，第1欄（股號）與第2欄（名稱）固定不動；只套用於持股總表／已出清參考／比對結果，交易明細視窗不受影響 */
+#page-stock .sticky-first2 table thead th:nth-child(1),
+#page-stock .sticky-first2 table thead th:nth-child(2),
+#page-stock .sticky-first2 table tbody td:nth-child(1),
+#page-stock .sticky-first2 table tbody td:nth-child(2){position:sticky;}
+#page-stock .sticky-first2 table thead th:nth-child(1),
+#page-stock .sticky-first2 table thead th:nth-child(2){background:var(--panel-2);z-index:3;}
+#page-stock .sticky-first2 table tbody td:nth-child(1),
+#page-stock .sticky-first2 table tbody td:nth-child(2){background:var(--panel);z-index:2;}
+#page-stock .sticky-first2 table thead th:nth-child(1),
+#page-stock .sticky-first2 table tbody td:nth-child(1){left:0;width:66px;min-width:66px;max-width:66px;}
+#page-stock .sticky-first2 table thead th:nth-child(2),
+#page-stock .sticky-first2 table tbody td:nth-child(2){left:66px;width:108px;min-width:108px;max-width:108px;overflow:hidden;text-overflow:ellipsis;box-shadow:2px 0 6px -3px rgba(15,31,61,.18);}
+#page-stock .sticky-first2 table tbody tr:hover td:nth-child(1),
+#page-stock .sticky-first2 table tbody tr:hover td:nth-child(2){background:var(--panel-2);}
+
+#page-stock .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);align-items:center;justify-content:center;z-index:1000;padding:16px;}
+#page-stock .modal-bg.show{display:flex;}
+#page-stock .modal{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);max-width:640px;width:100%;max-height:80vh;overflow-y:auto;padding:22px;box-shadow:0 8px 32px rgba(0,0,0,.18);}
+#page-stock .modal h3{margin:0 0 4px;font-size:18px;font-weight:600;color:var(--navy);}
+#page-stock .modal .modal-sub{color:var(--text-dim);font-size:12px;margin-bottom:16px;}
+#page-stock .modal-close{float:right;cursor:pointer;color:var(--text-faint);font-size:20px;line-height:1;}
+#page-stock .modal-close:hover{color:var(--text);}
+
+#page-stock .note{font-size:11px;color:var(--text-light);line-height:1.7;margin-top:4px;}
+#page-stock #statusBar.warn{background:#fffbeb;color:#8a5000;border:1px solid #f3dca0;}
+#page-stock #statusBar.error{background:#fff1f0;color:var(--red);border:1px solid #f1b9b3;}
+#page-stock #statusBar.ok{background:var(--green-bg);color:var(--green);border:1px solid #bfe3cf;}
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div class="brand">
+    <div class="brand-icon"><i class="ti ti-report-money"></i></div>
+    <span class="brand-text">理財管理</span>
+  </div>
+  <nav>
+    <div class="nav-item active" onclick="showPage('dashboard')" data-page="dashboard">
+      <i class="ti ti-layout-dashboard"></i><span class="nav-label">總覽</span>
+    </div>
+    <div class="nav-item" onclick="showPage('bank')" data-page="bank">
+      <i class="ti ti-building-bank"></i><span class="nav-label">銀行存款</span>
+    </div>
+    <div class="nav-item" onclick="showPage('forex')" data-page="forex">
+      <i class="ti ti-currency-exchange"></i><span class="nav-label">外匯交易</span>
+    </div>
+    <div class="nav-item" onclick="showPage('fund')" data-page="fund">
+      <i class="ti ti-chart-area"></i><span class="nav-label">基金交易</span>
+    </div>
+    <div class="nav-item" onclick="showPage('stock')" data-page="stock">
+      <i class="ti ti-chart-candle"></i><span class="nav-label">股票交易</span>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <button id="toggle-sidebar" onclick="toggleSidebar()">
+      <i class="ti ti-layout-sidebar-left-collapse"></i>
+    </button>
+  </div>
+</div>
+
+<div id="main">
+  <div id="topbar">
+    <span class="topbar-title" id="page-title">總覽</span>
+    <div class="topbar-actions">
+      <button class="btn btn-sm" id="gdrive-btn" onclick="handleGoogleAuth()"><i class="ti ti-brand-google-drive"></i> <span id="gdrive-btn-text">連結 Google Drive</span></button>
+      <button class="btn btn-sm" onclick="exportData()"><i class="ti ti-download"></i> 匯出 Excel</button>
+      <button class="btn btn-sm" onclick="document.getElementById('import-file').click()"><i class="ti ti-upload"></i> 匯入 Excel</button>
+      <input type="file" id="import-file" accept=".xlsx,.xls" style="display:none" onchange="importData(event)">
+    </div>
+  </div>
+
+  <div id="syncbar">
+    <div class="sync-dot disconnected" id="sync-dot"></div>
+    <span id="sync-status">尚未連結 Google Drive，資料暫存於此裝置</span>
+    <div class="sync-actions">
+      <button class="btn btn-sm" id="sync-now-btn" style="display:none" onclick="syncNow()"><i class="ti ti-refresh"></i> 立即同步</button>
+      <button class="btn btn-sm btn-danger" id="signout-btn" style="display:none" onclick="signOut()"><i class="ti ti-logout"></i> 登出</button>
+    </div>
+  </div>
+
+  <div id="content">
+
+    <div id="page-dashboard" class="page active">
+      <div class="stat-grid" id="dash-stats"></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px">
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px"><i class="ti ti-building-bank"></i> 銀行存款摘要</div>
+          <div id="dash-bank"></div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px"><i class="ti ti-currency-exchange"></i> 外匯摘要</div>
+          <div id="dash-forex"></div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px"><i class="ti ti-chart-area"></i> 基金摘要</div>
+          <div id="dash-fund"></div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px"><i class="ti ti-chart-candle"></i> 股票摘要</div>
+          <div id="dash-stock"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-bank" class="page">
+      <!-- 銀行總覽 stat -->
+      <div class="stat-grid" id="bank-stats" style="margin-bottom:16px"></div>
+      <div class="card">
+        <!-- Tab 列 -->
+        <div class="bank-tabs" id="bank-tabs"></div>
+        <!-- 目前銀行標題列 -->
+        <div class="card-header" style="margin-bottom:8px">
+          <div class="card-title" id="bank-tab-title"><i class="ti ti-building-bank"></i> 請選擇或新增銀行</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm" onclick="toggleSelectMode('bank')"><i class="ti ti-checkbox"></i> 選取刪除</button>
+            <button class="btn btn-gold btn-sm" id="bank-add-record-btn" onclick="openBankRecordModal()" style="display:none"><i class="ti ti-plus"></i> 新增記錄</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead id="bank-thead"><tr><th>日期</th><th>摘要</th><th>類型</th><th class="td-right">金額 (TWD)</th><th class="td-right">餘額</th><th></th></tr></thead>
+            <tbody id="bank-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-forex" class="page">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="ti ti-currency-exchange"></i> 外匯交易紀錄</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm" onclick="openForexRateModal()"><i class="ti ti-refresh"></i> 更新匯率</button>
+            <button class="btn btn-sm" onclick="toggleSelectMode('forex')"><i class="ti ti-checkbox"></i> 選取刪除</button>
+            <button class="btn btn-gold btn-sm" onclick="openModal('forex-modal')"><i class="ti ti-plus"></i> 新增</button>
+          </div>
+        </div>
+        <div class="stat-grid" id="forex-stats"></div>
+        <div class="table-wrap">
+          <table>
+            <thead id="forex-thead"><tr><th>日期</th><th>幣別</th><th>類型</th><th>方向</th><th class="td-right">外幣金額</th><th class="td-right">匯率</th><th class="td-right">台幣金額</th><th>備註</th><th></th></tr></thead>
+            <tbody id="forex-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">各幣別持倉</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>幣別</th><th class="td-right">持有外幣</th><th class="td-right">平均成本匯率</th><th class="td-right">投入台幣</th><th class="td-right">即期匯率</th><th class="td-right">現金匯率</th><th class="td-right">現值(即期)</th><th class="td-right">現值(現金)</th><th class="td-right">損益</th></tr></thead>
+            <tbody id="forex-summary-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-fund" class="page">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="ti ti-chart-area"></i> 基金交易紀錄</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm" onclick="toggleSelectMode('fund')"><i class="ti ti-checkbox"></i> 選取刪除</button>
+            <button class="btn btn-gold btn-sm" onclick="openModal('fund-modal')"><i class="ti ti-plus"></i> 新增</button>
+          </div>
+        </div>
+        <div class="stat-grid" id="fund-stats"></div>
+        <div class="table-wrap">
+          <table>
+            <thead id="fund-thead"><tr><th>日期</th><th>基金名稱</th><th>類型</th><th class="td-right">金額(台幣)</th><th class="td-right">單位數</th><th class="td-right">淨值</th><th>備註</th><th></th></tr></thead>
+            <tbody id="fund-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">基金持倉摘要</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>基金名稱</th><th class="td-right">持有單位數</th><th class="td-right">投入成本</th><th class="td-right">現值估算</th><th>備註</th></tr></thead>
+            <tbody id="fund-summary-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+<div id="page-stock" class="page">
+  <div class="summary-grid">
+    <div class="summary-card"><div class="k">總成本</div><div class="v" id="sumCost">—</div></div>
+    <div class="summary-card"><div class="k">總現值</div><div class="v" id="sumValue">—</div></div>
+    <div class="summary-card"><div class="k">總損益</div><div class="v" id="sumPL">—</div></div>
+    <div class="summary-card"><div class="k">總損益比</div><div class="v" id="sumPLPct">—</div></div>
+    <div class="summary-card"><div class="k">獲利股現值總計</div><div class="v" id="sumProfitValue">—</div></div>
+    <div class="summary-card"><div class="k">虧損股現值總計</div><div class="v" id="sumLossValue">—</div></div>
+  </div>
+  <div class="summary-grid-2">
+    <div class="summary-card"><div class="k">本日上漲家數</div><div class="v up" id="sumUpCount">—</div><div class="sub" id="sumUpCost">成本總和 —</div></div>
+    <div class="summary-card"><div class="k">本日下跌家數</div><div class="v down" id="sumDownCount">—</div><div class="sub" id="sumDownCost">成本總和 —</div></div>
+    <div class="summary-card"><div class="k">本日平盤家數</div><div class="v" id="sumFlatCount">—</div><div class="sub" id="sumFlatCost">成本總和 —</div></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="tabs">
+      <div class="tab active" data-tab="holdings">持股總表</div>
+      <div class="tab" data-tab="soldout">已出清參考</div>
+      <div class="tab" data-tab="compare">比對</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn" id="refreshQuoteBtn">重新整理股價</button>
+      <button class="btn" id="exportBtn">匯出 Excel</button>
+      <button class="btn" id="importBtn">匯入 Excel</button>
+      <input type="file" id="importFile" accept=".xlsx,.xls" style="display:none;">
+      <button class="btn" id="restoreBtn" title="從自動備份還原，或匯入舊版股倉存在 Google Drive 的資料">資料還原</button>
+      <button class="btn" id="exjBtn">匯出 JSON</button>
+      <button class="btn" id="excBtn">匯出 CSV</button>
+      <button class="btn primary" id="toggleFormBtn">＋ 新增交易</button>
+    </div>
+  </div>
+
+  <div id="statusBar" style="display:none;font-family:var(--mono);font-size:12px;padding:10px 14px;border-radius:8px;margin-bottom:14px;"></div>
+
+  <div class="panel" id="txForm">
+    <div class="form-grid">
+      <div class="field"><label>股票代號</label><input id="fCode" type="text" maxlength="7" placeholder="2330 或 00693U"></div>
+      <div class="field"><label>日期</label><input id="fDate" type="date"></div>
+      <div class="field"><label>買／賣</label>
+        <select id="fType"><option value="buy">買進</option><option value="sell">賣出</option></select>
+      </div>
+      <div class="field"><label>股數</label><input id="fShares" type="number" min="1" step="1" placeholder="1000"></div>
+      <div class="field"><label>價格</label><input id="fPrice" type="number" min="0" step="0.01" placeholder="580.00"></div>
+      <div class="field"><label>手續費／稅</label><input id="fFee" type="number" min="0" step="1" value="0"></div>
+      <div class="field"><label>名稱</label><input id="fName" type="text" placeholder="查無資料時可自行輸入"></div>
+      <div class="field"><label>行業別</label><input id="fIndustry" type="text" placeholder="選填"></div>
+      <div class="field"><label>所屬集團</label><input id="fGroup" type="text" placeholder="選填"></div>
+      <div class="field"><label>概念股</label><input id="fConcept" type="text" placeholder="選填"></div>
+      <div class="field"><label>備註</label><input id="fNote" type="text" placeholder="選填"></div>
+      <div class="field"><button class="btn primary" id="submitTxBtn" style="width:100%;">加入紀錄</button></div>
+      <div class="field" id="cancelEditWrap" style="display:none;"><button class="btn" id="cancelEditBtn" style="width:100%;">取消編輯</button></div>
+    </div>
+  </div>
+  <div class="msg" id="editingBanner" style="display:none;margin:-6px 0 14px;color:var(--accent);"></div>
+
+  <div class="panel" id="holdingsPanel">
+    <div class="table-scroll sticky-first2">
+      <table>
+        <thead><tr id="holdingsHeadRow">
+          <th class="sortable" data-key="code">股號<span class="arrow"></span></th>
+          <th class="sortable" data-key="name">名稱<span class="arrow"></span></th>
+          <th class="sortable" data-key="industry">行業別<span class="arrow"></span></th>
+          <th class="sortable" data-key="group">所屬集團<span class="arrow"></span></th>
+          <th class="sortable" data-key="concept">概念股<span class="arrow"></span></th>
+          <th class="sortable" data-key="avgCost">成本價<span class="arrow"></span></th>
+          <th class="sortable" data-key="shares">股數<span class="arrow"></span></th>
+          <th class="sortable" data-key="price">最新收盤<span class="arrow"></span></th>
+          <th class="sortable" data-key="changePct">漲跌幅<span class="arrow"></span></th>
+          <th class="sortable" data-key="volume">成交量<span class="arrow"></span></th>
+          <th class="sortable" data-key="volumeChangePct">量增減<span class="arrow"></span></th>
+          <th class="sortable" data-key="pl">損益<span class="arrow"></span></th>
+          <th class="sortable" data-key="plPct">損益比<span class="arrow"></span></th>
+          <th class="sortable" data-key="sigMA" title="5日線與10日線的交叉（近5個交易日內）">均線(5/10)<span class="arrow"></span></th>
+          <th class="sortable" data-key="sigKD" title="KD(9,3,3) K線與D線的交叉（近5個交易日內）">KD<span class="arrow"></span></th>
+          <th class="sortable" data-key="sigMACD" title="MACD(12,26,9) DIF與訊號線的交叉（近5個交易日內）">MACD<span class="arrow"></span></th>
+          <th style="text-align:left;">操作</th>
+        </tr></thead>
+        <tbody id="holdingsBody"><tr><td colspan="17" class="empty">尚無持股資料，請先新增交易</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel" id="soldoutPanel" style="display:none;">
+    <div class="table-scroll sticky-first2">
+      <table>
+        <thead><tr id="soldoutHeadRow">
+          <th class="sortable" data-key="code">股號<span class="arrow"></span></th>
+          <th class="sortable" data-key="name">名稱<span class="arrow"></span></th>
+          <th class="sortable" data-key="industry">行業別<span class="arrow"></span></th>
+          <th class="sortable" data-key="group">所屬集團<span class="arrow"></span></th>
+          <th class="sortable" data-key="concept">概念股<span class="arrow"></span></th>
+          <th class="sortable" data-key="txCount">買賣次數<span class="arrow"></span></th>
+          <th class="sortable" data-key="firstBuy">首次買進<span class="arrow"></span></th>
+          <th class="sortable" data-key="lastSell">最後賣出<span class="arrow"></span></th>
+          <th class="sortable" data-key="realizedPL">已實現損益<span class="arrow"></span></th>
+          <th class="sortable" data-key="realizedPct">已實現損益比<span class="arrow"></span></th>
+          <th class="sortable" data-key="avgCost" title="出清前最後的平均成本價">成本價<span class="arrow"></span></th>
+          <th class="sortable" data-key="shares">股數<span class="arrow"></span></th>
+          <th class="sortable" data-key="price">最新收盤<span class="arrow"></span></th>
+          <th class="sortable" data-key="changePct">漲跌幅<span class="arrow"></span></th>
+          <th class="sortable" data-key="volume">成交量<span class="arrow"></span></th>
+          <th class="sortable" data-key="volumeChangePct">量增減<span class="arrow"></span></th>
+          <th class="sortable" data-key="sigMA" title="5日線與10日線的交叉（近5個交易日內）">均線(5/10)<span class="arrow"></span></th>
+          <th class="sortable" data-key="sigKD" title="KD(9,3,3) K線與D線的交叉（近5個交易日內）">KD<span class="arrow"></span></th>
+          <th class="sortable" data-key="sigMACD" title="MACD(12,26,9) DIF與訊號線的交叉（近5個交易日內）">MACD<span class="arrow"></span></th>
+          <th style="text-align:left;">操作</th>
+        </tr></thead>
+        <tbody id="soldoutBody"><tr><td colspan="20" class="empty">尚無已出清股票</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel" id="comparePanel" style="display:none;">
+    <div class="form-grid" style="grid-template-columns:repeat(4,1fr);align-items:end;">
+      <div class="field"><label>舊的快照</label><select id="cmpOld"></select></div>
+      <div class="field"><label>新的快照</label><select id="cmpNew"></select></div>
+      <div class="field"><button class="btn primary" id="cmpGoBtn" style="width:100%;">開始比對</button></div>
+      <div class="field"><label>匯入先前匯出的 JSON</label><input type="file" id="cmpImportFile" accept=".json"></div>
+    </div>
+    <div class="msg" id="cmpMsg" style="margin-top:10px;">每次重新整理股價都會自動存一份當日持股快照。不同日期各更新一次後，就能在這裡比較持股的增減與損益變化。</div>
+  </div>
+  <div class="panel" id="cmpResultPanel" style="display:none;">
+    <div class="summary-grid" id="cmpSummary" style="grid-template-columns:repeat(5,1fr);margin:0 0 16px;"></div>
+    <div class="toolbar" style="margin-bottom:12px;">
+      <div class="field" style="min-width:160px;"><label>顯示</label>
+        <select id="cmpFilter">
+          <option value="">全部有變動</option>
+          <option value="新增持股">新增持股</option>
+          <option value="出清">出清</option>
+          <option value="加碼">加碼</option>
+          <option value="減碼">減碼</option>
+          <option value="持平">持平</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-scroll sticky-first2">
+      <table>
+        <thead><tr>
+          <th>股號</th><th>名稱</th><th>狀態</th><th>股數變化</th><th>舊損益比</th><th>新損益比</th><th>變動</th><th>股價變動</th>
+        </tr></thead>
+        <tbody id="cmpBody"><tr><td colspan="8" class="empty">尚無比對結果</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="note">
+    損益計算採平均成本法：買進時重新計算加權平均成本，賣出時以「賣出價 − 當下平均成本」計算該筆已實現損益。股價資料來自 FinMind API（finmindtrade.com，涵蓋上市／上櫃，每日收盤後更新，非盤中即時價，欄位旁日期即為資料實際日期），公司中文名稱來自證交所 OpenAPI 作為預設值；行業別、所屬集團、概念股均為手動輸入。交易紀錄與自訂欄位會隨本系統資料一起存在本機並同步至 Google Drive；比對用的每日快照僅存於此瀏覽器。
+  </div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <span class="modal-close" id="modalClose">&times;</span>
+    <h3 id="modalTitle">—</h3>
+    <div class="modal-sub" id="modalSub"></div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>日期</th><th>買／賣</th><th>股數</th><th>價格</th><th>手續費</th><th>當下均成本</th><th>該筆損益</th><th style="text-align:left;">備註</th><th style="text-align:left;">操作</th></tr></thead>
+        <tbody id="modalBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="modal-bg" id="bank-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="bank-modal-title">新增收支記錄</span>
+      <button class="btn btn-sm" onclick="closeModal('bank-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>日期</label><input type="date" id="bank-date"></div>
+        <div class="form-group"><label>摘要</label><input type="text" id="bank-desc" placeholder="薪資、轉帳..."></div>
+        <div class="form-group"><label>類型</label>
+          <select id="bank-type"><option value="in">收入</option><option value="out">支出</option><option value="interest">利息</option><option value="dividend">股利</option></select>
+        </div>
+        <div class="form-group"><label>金額 (TWD)</label><input type="number" id="bank-amount" placeholder="0"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('bank-modal')">取消</button>
+      <button class="btn btn-primary" onclick="addBank()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 新增銀行 Modal -->
+<div class="modal-bg" id="new-bank-modal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <span class="modal-title" id="new-bank-modal-title">新增銀行</span>
+      <button class="btn btn-sm" onclick="closeModal('new-bank-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>銀行名稱</label>
+        <input type="text" id="new-bank-name" placeholder="e.g. 台灣銀行、郵局">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" id="delete-bank-btn" style="display:none;margin-right:auto" onclick="deleteCurrentBank()"><i class="ti ti-trash"></i> 刪除此銀行</button>
+      <button class="btn" onclick="closeModal('new-bank-modal')">取消</button>
+      <button class="btn btn-primary" id="new-bank-save-btn" onclick="addBankAccount()">新增</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="forex-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">新增外匯交易</span>
+      <button class="btn btn-sm" onclick="closeModal('forex-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>日期</label><input type="date" id="forex-date"></div>
+        <div class="form-group"><label>幣別</label>
+          <select id="forex-currency">
+            <option value="USD">美元 USD</option><option value="JPY">日圓 JPY</option>
+            <option value="EUR">歐元 EUR</option><option value="GBP">英鎊 GBP</option>
+            <option value="AUD">澳幣 AUD</option><option value="CNY">人民幣 CNY</option>
+            <option value="HKD">港幣 HKD</option><option value="SGD">新幣 SGD</option>
+            <option value="KRW">韓圜 KRW</option>
+          </select>
+        </div>
+        <div class="form-group"><label>交易類型</label>
+          <select id="forex-trans-type"><option value="spot">即期</option><option value="cash">現金</option></select>
+        </div>
+        <div class="form-group"><label>買/賣</label>
+          <select id="forex-dir"><option value="buy">買入外幣</option><option value="sell">賣出外幣</option></select>
+        </div>
+        <div class="form-group"><label>外幣金額</label><input type="number" id="forex-amount" placeholder="0" step="0.01"></div>
+        <div class="form-group"><label>匯率 (TWD per 外幣)</label><input type="number" id="forex-rate" placeholder="0" step="0.0001"></div>
+        <div class="form-group"><label>備註</label><input type="text" id="forex-note" placeholder=""></div>
+      </div>
+      <div style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;font-size:13px;color:var(--text-muted)">
+        台幣金額：<strong id="forex-twd-preview" style="color:var(--navy)">—</strong>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('forex-modal')">取消</button>
+      <button class="btn btn-primary" onclick="addForex()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="fund-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">新增基金交易</span>
+      <button class="btn btn-sm" onclick="closeModal('fund-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>日期</label><input type="date" id="fund-date"></div>
+        <div class="form-group"><label>基金名稱</label><input type="text" id="fund-name" placeholder="元大台灣50 ETF"></div>
+        <div class="form-group"><label>交易類型</label>
+          <select id="fund-type"><option value="buy">申購/買入</option><option value="sell">贖回/賣出</option></select>
+        </div>
+        <div class="form-group"><label>金額 (TWD)</label><input type="number" id="fund-amount" placeholder="0"></div>
+        <div class="form-group"><label>單位數</label><input type="number" id="fund-units" placeholder="0" step="0.0001"></div>
+        <div class="form-group"><label>淨值(每單位)</label><input type="number" id="fund-nav" placeholder="0" step="0.0001"></div>
+        <div class="form-group"><label>備註</label><input type="text" id="fund-note" placeholder=""></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('fund-modal')">取消</button>
+      <button class="btn btn-primary" onclick="addFund()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="forex-rate-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title"><i class="ti ti-currency-exchange"></i> 外匯匯率設定</span>
+      <button class="btn btn-sm" onclick="closeModal('forex-rate-modal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-size:13px;color:var(--text-muted)">即期匯率來源：Yahoo Finance</div>
+        <button class="btn btn-primary btn-sm" id="fetch-rate-btn" onclick="fetchForexRates()"><i class="ti ti-refresh"></i> 自動抓取即期匯率</button>
+      </div>
+      <div id="forex-rate-inputs"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('forex-rate-modal')">取消</button>
+      <button class="btn btn-primary" onclick="saveForexRates()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<div id="select-bar">
+  <div class="select-bar-info">已選取 <strong id="select-count">0</strong> 筆</div>
+  <button class="btn btn-sm" onclick="selectAll()" style="background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.2);color:#fff"><i class="ti ti-select-all"></i> 全選</button>
+  <button class="btn btn-sm" onclick="deselectAll()" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.15);color:#fff"><i class="ti ti-square"></i> 取消全選</button>
+  <div style="margin-left:auto;display:flex;gap:8px">
+    <button class="btn btn-sm" onclick="toggleSelectMode()" style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2);color:#fff"><i class="ti ti-x"></i> 結束選取</button>
+    <button class="btn btn-sm btn-danger" id="delete-selected-btn" onclick="deleteSelected()" disabled><i class="ti ti-trash"></i> 刪除選取</button>
+  </div>
+</div>
+
+<script>
+let db = {bank:[],forex:[],fund:[],stock:{transactions:[],manualInfo:{}},forexRates:{},forexSpotRates:{},forexCashRates:{},cashSpread:{},meta:{version:1}};
+let sidebarCollapsed = false;
+let forexRateLoading = false;
+let currentBank = ''; // 目前選取的銀行 tab
+
+// Constants
+const BANK_IN_TYPES = ['in','interest','dividend'];
+const BANK_TYPE_LABEL = {in:'收入',out:'支出',interest:'利息',dividend:'股利'};
+const BANK_TYPE_TAG   = {in:'tag-in',out:'tag-out',interest:'tag-interest',dividend:'tag-dividend'};
+const FOREX_SYMBOLS = {
+  USD:'USDTWD=X', JPY:'JPYTWD=X', EUR:'EURTWD=X', GBP:'GBPTWD=X',
+  AUD:'AUDTWD=X', CNY:'CNYTWD=X', HKD:'HKDTWD=X', SGD:'SGDTWD=X', KRW:'KRWTWD=X'
+};
+
+// ================================================================
+// Google Drive Sync
+// ================================================================
+const CLIENT_ID = '151662671811-2kvc4psjckl0umlklushu7b2k86gtcr8.apps.googleusercontent.com';
+const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
+const FILE_NAME = 'invest_data.json';
+
+let tokenClient = null;
+let accessToken = null;
+let driveFileId = null;
+let syncTimer = null;
+let gapiReady = false;
+let gisReady = false;
+
+function initGoogleAPIs(){
+  const waitGapi = setInterval(()=>{
+    if(window.gapi){
+      clearInterval(waitGapi);
+      gapi.load('client', async ()=>{
+        try{
+          await gapi.client.init({});
+          gapiReady = true;
+          tryAutoSignIn();
+        }catch(e){ console.warn('gapi init error',e); }
+      });
+    }
+  }, 100);
+
+  const waitGIS = setInterval(()=>{
+    if(window.google?.accounts?.oauth2){
+      clearInterval(waitGIS);
+      try{
+        tokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: CLIENT_ID,
+          scope: SCOPES,
+          callback: async (resp)=>{
+            if(resp.error){ setSyncStatus('error','授權失敗：'+resp.error); return; }
+            accessToken = resp.access_token;
+            localStorage.setItem('invest_gdrive_token', accessToken);
+            gapi.client.setToken({access_token: accessToken});
+            setSyncStatus('syncing','正在讀取雲端資料…');
+            await loadFromDrive();
+          }
+        });
+        gisReady = true;
+        tryAutoSignIn();
+      }catch(e){ console.warn('GIS init error',e); }
+    }
+  }, 100);
+
+  setTimeout(()=>{
+    clearInterval(waitGapi);
+    clearInterval(waitGIS);
+  }, 15000);
+}
+
+function tryAutoSignIn(){
+  if(!gapiReady || !gisReady) return;
+  const saved = localStorage.getItem('invest_gdrive_token');
+  if(saved){
+    accessToken = saved;
+    gapi.client.setToken({access_token: accessToken});
+    setSyncStatus('syncing','正在驗證連線…');
+    loadFromDrive().catch(()=>{
+      accessToken = null;
+      localStorage.removeItem('invest_gdrive_token');
+      setSyncStatus('disconnected','登入已過期，請重新連結 Google Drive');
+    });
+  }
+}
+
+function handleGoogleAuth(){
+  if(accessToken){ signOut(); return; }
+  if(!gisReady){
+    let waited=0;
+    const wait=setInterval(()=>{
+      waited+=200;
+      if(gisReady){ clearInterval(wait); tokenClient.requestAccessToken({prompt:''}); }
+      else if(waited>=8000){ clearInterval(wait); toast('Google 服務載入逾時，請重新整理頁面再試'); }
+    },200);
+    toast('Google 服務載入中，請稍候…');
+    return;
+  }
+  tokenClient.requestAccessToken({prompt:''});
+}
+
+function signOut(){
+  if(accessToken) google.accounts.oauth2.revoke(accessToken);
+  accessToken = null; driveFileId = null;
+  localStorage.removeItem('invest_gdrive_token');
+  setSyncStatus('disconnected','已登出，資料暫存於此裝置');
+  document.getElementById('gdrive-btn-text').textContent = '連結 Google Drive';
+  document.getElementById('sync-now-btn').style.display = 'none';
+  document.getElementById('signout-btn').style.display = 'none';
+}
+
+function setSyncStatus(state, msg){
+  document.getElementById('sync-dot').className = 'sync-dot ' + state;
+  document.getElementById('sync-status').textContent = msg;
+  document.getElementById('syncbar').className = state==='syncing'?'syncing':state==='error'?'error':'';
+  if(state==='connected'){
+    document.getElementById('gdrive-btn-text').textContent = '已連結 Drive';
+    document.getElementById('sync-now-btn').style.display = '';
+    document.getElementById('signout-btn').style.display = '';
+  }
+}
+
+async function getDriveFileId(){
+  if(driveFileId) return driveFileId;
+  const resp = await gapi.client.request({
+    path:'https://www.googleapis.com/drive/v3/files',
+    params:{spaces:'appDataFolder', q:`name='${FILE_NAME}'`, fields:'files(id,name)'}
+  });
+  const files = resp.result.files;
+  if(files && files.length > 0) driveFileId = files[0].id;
+  return driveFileId;
+}
+
+async function loadFromDrive(){
+  try{
+    const fid = await getDriveFileId();
+    if(!fid){
+      setSyncStatus('connected','已連結 Google Drive（首次使用，上傳本機資料中…）');
+      await saveToDrive();
+      setSyncStatus('connected','已連結 Google Drive ✓ — '+new Date().toLocaleTimeString('zh-TW'));
+      return;
+    }
+    const resp = await gapi.client.request({
+      path:`https://www.googleapis.com/drive/v3/files/${fid}`,
+      params:{alt:'media'}
+    });
+    const cloudDb = JSON.parse(resp.body);
+    if(cloudDb && typeof cloudDb==='object' && Array.isArray(cloudDb.bank)){
+      const prevStock = db.stock;
+      db = {bank:[],forex:[],fund:[],bankAccounts:[],forexRates:{},forexSpotRates:{},forexCashRates:{},cashSpread:{},meta:{version:1}, ...cloudDb};
+      db.bankAccounts = db.bankAccounts || [];
+      db.forexRates = db.forexRates || {};
+      db.forexSpotRates = db.forexSpotRates || {};
+      db.forexCashRates = db.forexCashRates || {};
+      db.cashSpread = db.cashSpread || {};
+      // 股票資料不會被雲端直接覆蓋：雲端沒資料就保留本機並補上傳；兩邊都有且不同則詢問，落選的一份先備份
+      db.stock = reconcileStock(prevStock, cloudDb.stock);
+      ensureStock();
+      if(!currentBank && db.bankAccounts.length>0) currentBank=db.bankAccounts[0];
+      migrateDates();
+      saveLocal(); renderAll();
+    }
+    setSyncStatus('connected','已連結 Google Drive ✓ — 上次同步：'+new Date().toLocaleTimeString('zh-TW'));
+    toast('Google Drive 資料已載入');
+  }catch(e){
+    if(e.status===401){
+      accessToken=null; localStorage.removeItem('invest_gdrive_token');
+      setSyncStatus('error','登入已過期，請重新連結 Google Drive');
+    }else{
+      setSyncStatus('error','同步失敗：'+(e.result?.error?.message||e.message||'未知錯誤'));
+    }
+    throw e;
+  }
+}
+
+async function saveToDrive(){
+  if(!accessToken) return;
+  const content = JSON.stringify(db);
+  const boundary = 'invest_boundary';
+  const fid = await getDriveFileId();
+  const metadata = JSON.stringify({name:FILE_NAME, parents:fid?undefined:['appDataFolder']});
+  const body = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadata}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${content}\r\n--${boundary}--`;
+  const method = fid?'PATCH':'POST';
+  const path = fid
+    ?`https://www.googleapis.com/upload/drive/v3/files/${fid}?uploadType=multipart`
+    :`https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&spaces=appDataFolder`;
+  const resp = await fetch(path,{
+    method,
+    headers:{'Authorization':'Bearer '+accessToken,'Content-Type':`multipart/related; boundary=${boundary}`},
+    body
+  });
+  if(!resp.ok){ const err=await resp.json(); throw new Error(err.error?.message||'上傳失敗'); }
+  driveFileId = (await resp.json()).id;
+}
+
+async function syncNow(){
+  if(!accessToken){toast('尚未連結 Google Drive');return;}
+  setSyncStatus('syncing','同步中…');
+  try{
+    await saveToDrive();
+    setSyncStatus('connected','已連結 Google Drive ✓ — 上次同步：'+new Date().toLocaleTimeString('zh-TW'));
+    toast('已同步至 Google Drive');
+  }catch(e){
+    setSyncStatus('error','同步失敗：'+(e.message||'請重試'));
+    toast('同步失敗，請重試');
+  }
+}
+
+function scheduleSyncToDrive(){
+  if(!accessToken) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(async ()=>{
+    setSyncStatus('syncing','自動同步中…');
+    try{
+      await saveToDrive();
+      setSyncStatus('connected','已連結 Google Drive ✓ — 上次同步：'+new Date().toLocaleTimeString('zh-TW'));
+    }catch(e){
+      setSyncStatus('error','自動同步失敗，請手動同步');
+    }
+  }, 1500);
+}
+
+function migrateDates(){
+  ['bank','forex','fund'].forEach(type=>{
+    (db[type]||[]).forEach(r=>{ if(r.date) r.date=fmtDate(r.date); });
+  });
+}
+
+function saveLocal(){ localStorage.setItem('invest_db',JSON.stringify(db)); }
+function load(){
+  const s=localStorage.getItem('invest_db');
+  if(s)try{
+    const localDb = JSON.parse(s);
+    db = {bank:[],forex:[],fund:[],bankAccounts:[],forexRates:{},forexSpotRates:{},forexCashRates:{},cashSpread:{},meta:{version:1}, ...localDb};
+    db.bankAccounts = db.bankAccounts || [];
+    db.forexRates = db.forexRates || {};
+    db.forexSpotRates = db.forexSpotRates || {};
+    db.forexCashRates = db.forexCashRates || {};
+    db.cashSpread = db.cashSpread || {};
+    if(!currentBank && db.bankAccounts.length>0) currentBank=db.bankAccounts[0];
+    migrateDates();
+    ensureStock();
+  }catch(e){}
+}
+function ensureStock(){
+  if(!db.stock || typeof db.stock !== 'object') db.stock = {transactions:[],manualInfo:{}};
+  if(!Array.isArray(db.stock.transactions)) db.stock.transactions = [];
+  if(!db.stock.manualInfo || typeof db.stock.manualInfo !== 'object') db.stock.manualInfo = {};
+}
+// ---- 股票資料與雲端衝突時的保護 ----
+function stockHasData(s){
+  return !!(s && ((Array.isArray(s.transactions) && s.transactions.length) || (s.manualInfo && Object.keys(s.manualInfo).length)));
+}
+function stockSig(s){
+  const tx=((s&&s.transactions)||[]).map(t=>[t.id,t.code,t.date,t.type,t.shares,t.price,t.fee||0,t.note||''].join('|')).sort().join(';');
+  const mi=JSON.stringify(Object.keys((s&&s.manualInfo)||{}).sort().map(k=>[k,s.manualInfo[k]]));
+  return tx+'#'+mi;
+}
+// 被取代的一份先存成備份（最多留 5 份），可在「股票交易」頁按「資料還原」找回
+function backupStock(stock, reason){
+  try{
+    const list=JSON.parse(localStorage.getItem('invest_stock_backups')||'[]');
+    list.unshift({ts:Date.now(),reason:reason,count:((stock&&stock.transactions)||[]).length,stock:JSON.parse(JSON.stringify(stock||{transactions:[],manualInfo:{}}))});
+    localStorage.setItem('invest_stock_backups',JSON.stringify(list.slice(0,5)));
+  }catch(e){}
+}
+function reconcileStock(local, cloud){
+  const L=stockHasData(local), C=stockHasData(cloud);
+  if(!C){                       // 雲端沒有股票資料（舊檔，或曾被別處上傳空的）：保留本機並補上傳
+    if(L){ scheduleSyncToDrive(); return local; }
+    return cloud||local||{transactions:[],manualInfo:{}};
+  }
+  if(!L) return cloud;          // 本機沒資料：用雲端
+  if(stockSig(local)===stockSig(cloud)) return cloud;
+  const lc=(local.transactions||[]).length, cc=(cloud.transactions||[]).length;
+  const useCloud=confirm('雲端與本機的「股票交易」資料不同：\n本機 '+lc+' 筆、雲端 '+cc+' 筆\n\n按「確定」＝以雲端資料為準（本機原資料會先備份）\n按「取消」＝保留本機資料並覆蓋雲端（雲端原資料會先備份）\n\n之後可在「股票交易」頁按「資料還原」找回備份。');
+  if(useCloud){ backupStock(local,'被雲端資料取代的本機資料'); return cloud; }
+  backupStock(cloud,'被本機資料取代的雲端資料'); scheduleSyncToDrive(); return local;
+}
+function save(){ saveLocal(); scheduleSyncToDrive(); }
+function toast(msg,dur=2000){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),dur);
+}
+function fmt(n,d=0){return Number(n).toLocaleString('zh-TW',{minimumFractionDigits:d,maximumFractionDigits:d})}
+function pnl(n){return n>=0?`<span class="pos">+${fmt(n)}</span>`:`<span class="neg">${fmt(n)}</span>`}
+function pnlPct(n){return n>=0?`<span class="pos">+${n.toFixed(2)}%</span>`:`<span class="neg">${n.toFixed(2)}%</span>`}
+function today(){return new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit'}).replace(/\//g,'/')}
+function todayInput(){return new Date().toISOString().slice(0,10)}
+function fmtDate(d){
+  if(!d)return'—';
+  const s=String(d).replace(/-/g,'/');
+  const parts=s.split('/');
+  if(parts.length===3) return `${parts[0]}/${parseInt(parts[1])}/${parseInt(parts[2])}`;
+  return s;
+}
+function excelDateToStr(v){
+  if(typeof v==='number'){
+    const d=new Date(Math.round((v-25569)*86400*1000));
+    return `${d.getUTCFullYear()}/${d.getUTCMonth()+1}/${d.getUTCDate()}`;
+  }
+  if(typeof v==='string') return fmtDate(v);
+  return String(v||'');
+}
+function normalizeDate(d){
+  if(!d)return'';
+  // 統一儲存為 yyyy/m/d（去掉前導零）
+  const s=String(d).replace(/-/g,'/');
+  const parts=s.split('/');
+  if(parts.length===3) return `${parts[0]}/${parseInt(parts[1])}/${parseInt(parts[2])}`;
+  return s;
+}
+
+// ================================================================
+// Multi-select
+// ================================================================
+let selectMode = false;
+let selectType = '';
+let selectedIds = new Set();
+
+// 各模組排序狀態
+const sortState = {
+  bank:  {col:'date', dir:'desc'},
+  forex: {col:'date', dir:'desc'},
+  fund:  {col:'date', dir:'desc'},
+};
+
+function setSort(type, col){
+  const s = sortState[type];
+  if(s.col===col) s.dir = s.dir==='asc'?'desc':'asc';
+  else { s.col=col; s.dir='asc'; }
+  if(type==='bank') renderBank();
+  else if(type==='forex') renderForex();
+  else if(type==='fund') renderFund();
+}
+
+function sortIcon(type, col){
+  const s=sortState[type];
+  if(s.col!==col) return '<span style="opacity:0.25;font-size:10px">⇅</span>';
+  return s.dir==='asc'
+    ? '<span style="font-size:10px;color:var(--gold)">▲</span>'
+    : '<span style="font-size:10px;color:var(--gold)">▼</span>';
+}
+
+function sortRows(rows, type, col){
+  const dir = sortState[type].dir==='asc'?1:-1;
+  return [...rows].sort((a,b)=>{
+    let va=a[col]||'', vb=b[col]||'';
+    if(col==='amount') return (Number(a.amount||0)-Number(b.amount||0))*dir;
+    return String(va).localeCompare(String(vb),'zh-TW')*dir;
+  });
+}
+
+function thSort(type, col, label){
+  return `<th style="cursor:pointer;user-select:none;white-space:nowrap" onclick="setSort('${type}','${col}')">${label} ${sortIcon(type,col)}</th>`;
+}
+
+function toggleSelectMode(type){
+  if(selectMode && selectType===type){
+    selectMode=false; selectType=''; selectedIds.clear();
+    document.getElementById('select-bar').classList.remove('show');
+    ['bank','forex','fund'].forEach(t=>{
+      const el=document.getElementById(t+'-th-cb');
+      if(el)el.innerHTML='';
+    });
+    renderAll(); return;
+  }
+  selectMode=true; selectType=type; selectedIds.clear();
+  document.getElementById('select-bar').classList.add('show');
+  document.getElementById('select-count').textContent='0';
+  document.getElementById('delete-selected-btn').disabled=true;
+  renderAll();
+}
+
+function toggleRowSelect(id, cb){
+  if(cb.checked) selectedIds.add(id);
+  else selectedIds.delete(id);
+  updateSelectBar();
+  const row=document.querySelector(`tr[data-rid="${id}"]`);
+  if(row) row.classList.toggle('row-selected', cb.checked);
+}
+
+function updateSelectBar(){
+  const n=selectedIds.size;
+  document.getElementById('select-count').textContent=n;
+  document.getElementById('delete-selected-btn').disabled=n===0;
+}
+
+function selectAll(){
+  db[selectType].forEach(r=>selectedIds.add(r.id));
+  updateSelectBar(); renderAll();
+}
+
+function deselectAll(){
+  selectedIds.clear();
+  updateSelectBar(); renderAll();
+}
+
+function deleteSelected(){
+  if(!selectedIds.size)return;
+  const n=selectedIds.size;
+  if(!confirm(`確定刪除選取的 ${n} 筆記錄？此操作無法復原。`))return;
+  db[selectType]=db[selectType].filter(r=>!selectedIds.has(r.id));
+  selectedIds.clear();
+  save(); updateSelectBar(); renderAll();
+  toast(`已刪除 ${n} 筆記錄`);
+}
+
+function buildThead(type){
+  const cbTh = (selectMode && selectType===type)
+    ? `<th class="cb-th"><input type="checkbox" class="row-cb" id="${type}-cb-all" onclick="if(this.checked)selectAll();else deselectAll()"></th>`
+    : '';
+  const th=(col,label,right=false)=>
+    `<th style="cursor:pointer;user-select:none;white-space:nowrap${right?';text-align:right':''}" onclick="setSort('${type}','${col}')">${label} ${sortIcon(type,col)}</th>`;
+  if(type==='bank')  return `<tr>${cbTh}${th('date','日期')}${th('desc','摘要')}${th('type','類型')}<th class="td-right">金額 (TWD)</th><th class="td-right">餘額</th><th></th></tr>`;
+  if(type==='forex') return `<tr>${cbTh}${th('date','日期')}${th('currency','幣別')}${th('transType','類型')}${th('dir','方向')}<th class="td-right">外幣金額</th><th class="td-right">匯率</th><th class="td-right">台幣金額</th><th>備註</th><th></th></tr>`;
+  if(type==='fund')  return `<tr>${cbTh}${th('date','日期')}${th('name','基金名稱')}${th('type','類型')}<th class="td-right">金額(台幣)</th><th class="td-right">單位數</th><th class="td-right">淨值</th><th>備註</th><th></th></tr>`;
+  return '';
+}
+
+function renderSelectAllCb(type, data){
+  const thead = document.getElementById(type+'-thead');
+  if(!thead) return;
+  thead.innerHTML = buildThead(type);
+  if(selectMode && selectType===type){
+    const cb = document.getElementById(type+'-cb-all');
+    if(cb){
+      const allChecked = data.length>0 && data.every(r=>selectedIds.has(r.id));
+      const someChecked = data.some(r=>selectedIds.has(r.id));
+      cb.checked = allChecked;
+      cb.indeterminate = !allChecked && someChecked;
+    }
+  }
+}
+
+function cbCell(type, id){
+  if(!selectMode||selectType!==type) return '';
+  const checked=selectedIds.has(id)?'checked':'';
+  return `<td class="cb-td"><input type="checkbox" class="row-cb" ${checked} onclick="toggleRowSelect(${id},this)"></td>`;
+}
+
+function toggleSidebar(){
+  sidebarCollapsed=!sidebarCollapsed;
+  document.getElementById('sidebar').classList.toggle('collapsed',sidebarCollapsed);
+}
+
+function showPage(p){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.querySelector(`[data-page="${p}"]`).classList.add('active');
+  const titles={dashboard:'總覽',bank:'銀行存款',forex:'外匯交易',fund:'基金交易',stock:'股票交易'};
+  document.getElementById('page-title').textContent=titles[p];
+  renderAll();
+}
+
+function openModal(id){
+  document.getElementById(id).classList.add('show');
+  const dateFields={
+    'bank-modal':'bank-date',
+    'forex-modal':'forex-date','fund-modal':'fund-date'
+  };
+  if(dateFields[id]) document.getElementById(dateFields[id]).value=todayInput();
+}
+function closeModal(id){document.getElementById(id).classList.remove('show')}
+
+// ---- 取得所有銀行名稱（依出現順序）----
+function getBankList(){
+  const seen=new Set();
+  const list=[];
+  // 從 db.bankAccounts 取得順序（新增銀行時儲存順序）
+  (db.bankAccounts||[]).forEach(n=>{if(!seen.has(n)){seen.add(n);list.push(n);}});
+  // 再從記錄補遺
+  db.bank.forEach(r=>{if(r.name&&!seen.has(r.name)){seen.add(r.name);list.push(r.name);}});
+  return list;
+}
+
+function getBankBalance(bankName){
+  let bal=0;
+  db.bank.filter(r=>r.name===bankName).forEach(r=>{
+    bal+=BANK_IN_TYPES.includes(r.type)?r.amount:-r.amount;
+  });
+  return bal;
+}
+
+function openBankRecordModal(){
+  if(!currentBank){toast('請先選擇銀行');return}
+  document.getElementById('bank-modal-title').textContent=`新增記錄 — ${currentBank}`;
+  document.getElementById('bank-date').value=todayInput();
+  document.getElementById('bank-desc').value='';
+  document.getElementById('bank-amount').value='';
+  document.getElementById('bank-type').value='in';
+  document.getElementById('bank-modal').classList.add('show');
+}
+
+function addBank(){
+  const date=document.getElementById('bank-date').value;
+  const desc=document.getElementById('bank-desc').value.trim();
+  const type=document.getElementById('bank-type').value;
+  const amount=parseFloat(document.getElementById('bank-amount').value)||0;
+  if(!date||!currentBank||!amount){toast('請填寫必要欄位');return}
+  db.bank.push({id:Date.now(),date:normalizeDate(date),name:currentBank,desc,type,amount});
+  db.bank.sort((a,b)=>a.date.localeCompare(b.date));
+  save();closeModal('bank-modal');renderBank();toast('已新增記錄');
+}
+
+function addBankAccount(){
+  const name=document.getElementById('new-bank-name').value.trim();
+  if(!name){toast('請輸入銀行名稱');return}
+  if(!db.bankAccounts) db.bankAccounts=[];
+  if(db.bankAccounts.includes(name)||db.bank.some(r=>r.name===name)){
+    toast('此銀行已存在');return;
+  }
+  db.bankAccounts.push(name);
+  save();closeModal('new-bank-modal');
+  currentBank=name;
+  renderBank();toast(`已新增銀行：${name}`);
+}
+
+function openNewBankModal(){
+  document.getElementById('new-bank-modal-title').textContent='新增銀行';
+  document.getElementById('new-bank-name').value='';
+  document.getElementById('delete-bank-btn').style.display='none';
+  document.getElementById('new-bank-save-btn').textContent='新增';
+  document.getElementById('new-bank-save-btn').onclick=addBankAccount;
+  document.getElementById('new-bank-modal').classList.add('show');
+  setTimeout(()=>document.getElementById('new-bank-name').focus(),100);
+}
+
+function openRenameBankModal(bankName, e){
+  e.stopPropagation();
+  document.getElementById('new-bank-modal-title').textContent=`重新命名 — ${bankName}`;
+  document.getElementById('new-bank-name').value=bankName;
+  document.getElementById('delete-bank-btn').style.display='';
+  document.getElementById('new-bank-save-btn').textContent='儲存';
+  document.getElementById('new-bank-save-btn').onclick=()=>renameBankAccount(bankName);
+  document.getElementById('new-bank-modal').classList.add('show');
+}
+
+function renameBankAccount(oldName){
+  const newName=document.getElementById('new-bank-name').value.trim();
+  if(!newName){toast('請輸入名稱');return}
+  if(newName!==oldName){
+    // 更新 bankAccounts 順序
+    if(!db.bankAccounts) db.bankAccounts=getBankList();
+    const idx=db.bankAccounts.indexOf(oldName);
+    if(idx>-1) db.bankAccounts[idx]=newName;
+    else db.bankAccounts=db.bankAccounts.map(n=>n===oldName?newName:n);
+    // 更新所有記錄
+    db.bank.forEach(r=>{if(r.name===oldName)r.name=newName;});
+    if(currentBank===oldName) currentBank=newName;
+  }
+  save();closeModal('new-bank-modal');renderBank();toast('已更新銀行名稱');
+}
+
+function deleteCurrentBank(){
+  const bankName=document.getElementById('new-bank-name').value.trim();
+  const count=db.bank.filter(r=>r.name===bankName).length;
+  if(!confirm(`確定刪除「${bankName}」？\n此銀行共有 ${count} 筆記錄，將一併刪除。`))return;
+  if(!db.bankAccounts) db.bankAccounts=getBankList();
+  db.bankAccounts=db.bankAccounts.filter(n=>n!==bankName);
+  db.bank=db.bank.filter(r=>r.name!==bankName);
+  if(currentBank===bankName) currentBank=getBankList()[0]||'';
+  save();closeModal('new-bank-modal');renderBank();toast(`已刪除銀行：${bankName}`);
+}
+
+function selectBankTab(name){
+  currentBank=name;
+  renderBank();
+}
+
+function renderBank(){
+  const bankList=getBankList();
+
+  // 計算各行餘額
+  const balances={};
+  bankList.forEach(n=>{balances[n]=getBankBalance(n);});
+  const total=Object.values(balances).reduce((s,v)=>s+v,0);
+
+  // Stats
+  document.getElementById('bank-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-label">銀行存款總額</div><div class="stat-value">${fmt(total)} <span style="font-size:13px">TWD</span></div></div>
+    ${bankList.map(n=>`<div class="stat-card"><div class="stat-label">${n}</div><div class="stat-value ${balances[n]<0?'neg':''}">${fmt(balances[n])}</div></div>`).join('')}
+  `;
+
+  // Tabs
+  const tabsEl=document.getElementById('bank-tabs');
+  tabsEl.innerHTML=bankList.map(n=>`
+    <div class="bank-tab${currentBank===n?' active':''}" onclick="selectBankTab('${n.replace(/'/g,"\\'")}')">
+      <span>${n}</span>
+      <span class="tab-balance">${fmt(balances[n])}</span>
+      <button class="bank-rename-btn" onclick="openRenameBankModal('${n.replace(/'/g,"\\'")}',event)" title="重新命名/刪除"><i class="ti ti-pencil"></i></button>
+    </div>
+  `).join('')+`<div class="bank-tab add-tab" onclick="openNewBankModal()"><i class="ti ti-plus"></i> 新增銀行</div>`;
+
+  // 若目前沒有選取銀行，自動選第一個
+  if(!currentBank && bankList.length>0) currentBank=bankList[0];
+
+  // 標題與新增按鈕
+  const titleEl=document.getElementById('bank-tab-title');
+  const addBtn=document.getElementById('bank-add-record-btn');
+  if(currentBank){
+    titleEl.innerHTML=`<i class="ti ti-building-bank"></i> ${currentBank} <span style="font-size:12px;font-weight:400;color:var(--text-muted);margin-left:8px">餘額 ${fmt(balances[currentBank]||0)} TWD</span>`;
+    addBtn.style.display='';
+  } else {
+    titleEl.innerHTML=`<i class="ti ti-building-bank"></i> 請點右方「＋ 新增銀行」開始`;
+    addBtn.style.display='none';
+  }
+
+  // 明細表格（只顯示目前銀行）
+  // 先由舊到新計算各筆餘額
+  const rowsAsc=currentBank
+    ? [...db.bank].filter(r=>r.name===currentBank).sort((a,b)=>a.date.localeCompare(b.date))
+    : [];
+  let running=0;
+  rowsAsc.forEach(r=>{
+    const isIn=BANK_IN_TYPES.includes(r.type);
+    running+=isIn?r.amount:-r.amount;
+    r._balance=running;
+  });
+
+  // 依排序狀態排列顯示
+  const col=sortState.bank.col;
+  const rows = col==='date'
+    ? (sortState.bank.dir==='desc'?[...rowsAsc].reverse():[...rowsAsc])
+    : sortRows(rowsAsc,'bank',col);
+
+  renderSelectAllCb('bank', rows);
+  let html='';
+  rows.forEach(r=>{
+    const isIn=BANK_IN_TYPES.includes(r.type);
+    const tagCls=BANK_TYPE_TAG[r.type]||'tag-in';
+    const label=BANK_TYPE_LABEL[r.type]||r.type;
+    const sel=selectedIds.has(r.id)?'row-selected':'';
+    html+=`<tr data-rid="${r.id}" class="${sel}">
+      ${cbCell('bank',r.id)}
+      <td>${fmtDate(r.date)}</td><td>${r.desc||'—'}</td>
+      <td><span class="tag ${tagCls}">${label}</span></td>
+      <td class="td-right ${isIn?'pos':'neg'}">${isIn?'+':'-'}${fmt(r.amount)}</td>
+      <td class="td-right">${fmt(r._balance)}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteRecord('bank',${r.id})"><i class="ti ti-trash"></i></button></td>
+    </tr>`;
+  });
+  document.getElementById('bank-tbody').innerHTML=html||
+    (currentBank
+      ?'<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:24px">此銀行尚無記錄，點右上角「新增記錄」</td></tr>'
+      :'<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:24px">請新增銀行開始使用</td></tr>');
+}
+
+function getForexHoldings(){
+  const h={};
+  db.forex.forEach(r=>{
+    if(!h[r.currency])h[r.currency]={currency:r.currency,amount:0,costTWD:0};
+    const x=h[r.currency];
+    if(r.dir==='buy'){x.amount+=r.amount;x.costTWD+=r.amount*r.rate;}
+    else{x.amount-=r.amount;x.costTWD-=r.amount*r.rate;}
+  });
+  return Object.values(h).filter(h=>h.amount>0.0001);
+}
+
+function addForex(){
+  const date=document.getElementById('forex-date').value;
+  const currency=document.getElementById('forex-currency').value;
+  const transType=document.getElementById('forex-trans-type').value;
+  const dir=document.getElementById('forex-dir').value;
+  const amount=parseFloat(document.getElementById('forex-amount').value)||0;
+  const rate=parseFloat(document.getElementById('forex-rate').value)||0;
+  const note=document.getElementById('forex-note').value.trim();
+  if(!date||!amount||!rate){toast('請填寫必要欄位');return}
+  db.forex.push({id:Date.now(),date:normalizeDate(date),currency,transType,dir,amount,rate,note});
+  db.forex.sort((a,b)=>a.date.localeCompare(b.date));
+  save();closeModal('forex-modal');renderAll();toast('已新增外匯記錄');
+}
+
+function renderForex(){
+  const holdings=getForexHoldings();
+  let totalInvested=0;
+  holdings.forEach(h=>{totalInvested+=h.costTWD});
+
+  let totalValue=0;
+  holdings.forEach(h=>{
+    const sr=db.forexSpotRates?.[h.currency]; // 【防呆修改】加上 ?.
+    if(sr) totalValue+=h.amount*sr;
+    else totalValue+=h.costTWD;
+  });
+  const totalPnl=totalValue-totalInvested;
+
+  document.getElementById('forex-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-label">外匯投入總成本</div><div class="stat-value">${fmt(totalInvested)} TWD</div></div>
+    <div class="stat-card"><div class="stat-label">外匯總現值(即期)</div><div class="stat-value">${fmt(totalValue)} TWD</div></div>
+    <div class="stat-card"><div class="stat-label">總損益</div><div class="stat-value ${totalPnl>=0?'pos':'neg'}">${totalPnl>=0?'+':''}${fmt(totalPnl)}</div></div>
+    <div class="stat-card"><div class="stat-label">持有幣別</div><div class="stat-value">${holdings.length} 種</div></div>
+  `;
+
+  let fh='';
+  const forexRows=sortRows([...db.forex],'forex',sortState.forex.col);
+  renderSelectAllCb('forex', forexRows);
+  forexRows.forEach(r=>{
+    const sel=selectedIds.has(r.id)?'row-selected':'';
+    fh+=`<tr data-rid="${r.id}" class="${sel}">
+      ${cbCell('forex',r.id)}
+      <td>${fmtDate(r.date)}</td><td><strong>${r.currency}</strong></td>
+      <td><span class="tag ${r.transType==='spot'?'tag-spot':'tag-cash'}">${r.transType==='spot'?'即期':'現金'}</span></td>
+      <td><span class="tag ${r.dir==='buy'?'tag-buy':'tag-sell'}">${r.dir==='buy'?'買入':'賣出'}</span></td>
+      <td class="td-right">${fmt(r.amount,2)}</td>
+      <td class="td-right">${fmt(r.rate,4)}</td>
+      <td class="td-right">${fmt(r.amount*r.rate)}</td>
+      <td>${r.note||'—'}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteRecord('forex',${r.id})"><i class="ti ti-trash"></i></button></td>
+    </tr>`;
+  });
+  document.getElementById('forex-tbody').innerHTML=fh||'<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:24px">尚無資料</td></tr>';
+
+  let sh='';
+  holdings.forEach(h=>{
+    const avgRate=h.amount>0?h.costTWD/h.amount:0;
+    const spotRate=db.forexSpotRates?.[h.currency]||null; // 【防呆修改】加上 ?.
+    const spread=db.cashSpread?.[h.currency]??0.5;        // 【防呆修改】加上 ?.
+    const cashRate=spotRate?(spotRate+spread):null;
+    const spotValue=spotRate?h.amount*spotRate:null;
+    const cashValue=cashRate?h.amount*cashRate:null;
+    const pnlVal=spotValue?spotValue-h.costTWD:null;
+    sh+=`<tr>
+      <td><strong>${h.currency}</strong></td>
+      <td class="td-right">${fmt(h.amount,2)}</td>
+      <td class="td-right">${fmt(avgRate,4)}</td>
+      <td class="td-right">${fmt(h.costTWD)}</td>
+      <td class="td-right">${spotRate?`<span style="color:var(--blue)">${fmt(spotRate,4)}</span>`:'<span style="color:var(--text-muted)">未設定</span>'}</td>
+      <td class="td-right">${cashRate?`<span style="color:var(--amber)">${fmt(cashRate,4)}</span> <span style="font-size:10px;color:var(--text-muted)">(+${spread})</span>`:'—'}</td>
+      <td class="td-right">${spotValue?fmt(spotValue):'—'}</td>
+      <td class="td-right">${cashValue?fmt(cashValue):'—'}</td>
+      <td class="td-right">${pnlVal!==null?pnl(pnlVal):'—'}</td>
+    </tr>`;
+  });
+  document.getElementById('forex-summary-tbody').innerHTML=sh||'<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:24px">尚無持倉</td></tr>';
+}
+
+async function fetchForexRates(){
+  const holdings=getForexHoldings();
+  if(!holdings.length){toast('尚無外匯持倉');return}
+  if(forexRateLoading){toast('正在查詢中...');return}
+  forexRateLoading=true;
+
+  const btn=document.getElementById('fetch-rate-btn');
+  if(btn) btn.innerHTML='<i class="ti ti-loader"></i> 查詢中...';
+
+  const PROXY='https://corsproxy.io/?';
+  const currencies=[...new Set(holdings.map(h=>h.currency))];
+  const results={};
+  const errors=[];
+
+  for(const cur of currencies){
+    const symbol=FOREX_SYMBOLS[cur];
+    if(!symbol){errors.push(cur+' (不支援)');continue;}
+    const url=`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
+    try{
+      const resp=await fetch(PROXY+encodeURIComponent(url));
+      if(!resp.ok) throw new Error('HTTP '+resp.status);
+      const data=await resp.json();
+      const meta=data?.chart?.result?.[0]?.meta;
+      const price=meta?.regularMarketPrice||meta?.previousClose;
+      if(price){
+        results[cur]=price;
+        if(!db.forexSpotRates) db.forexSpotRates={};
+        if(!db.forexRates) db.forexRates={};
+        db.forexSpotRates[cur]=price;
+        db.forexRates[cur]=price; 
+      } else {
+        errors.push(cur);
+      }
+    }catch(e){
+      errors.push(cur);
+    }
+  }
+
+  if(btn) btn.innerHTML='<i class="ti ti-refresh"></i> 自動抓取即期匯率';
+  forexRateLoading=false;
+
+  if(Object.keys(results).length>0){
+    save();
+    openForexRateModal(true);
+    const errMsg=errors.length?`，${errors.join('、')} 失敗`:'';
+    toast(`即期匯率已更新${errMsg}`);
+  } else {
+    toast('匯率查詢失敗，請稍後再試');
+  }
+}
+
+function openForexRateModal(keepOpen=false){
+  const holdings=getForexHoldings();
+  if(!holdings.length){toast('尚無外匯持倉');return}
+
+  const currencies=[...new Set(holdings.map(h=>h.currency))];
+  let html='';
+  currencies.forEach(cur=>{
+    const spot=db.forexSpotRates?.[cur]||db.forexRates?.[cur]||''; // 【防呆修改】加上 ?.
+    const spread=db.cashSpread?.[cur]??0.5;                     // 【防呆修改】加上 ?.
+    const cash=spot?(+spot+spread).toFixed(4):'';
+    html+=`
+    <div style="background:var(--surface2);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px">
+      <div style="font-weight:600;font-size:13px;margin-bottom:10px;color:var(--navy)">${cur}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;align-items:end">
+        <div class="form-group">
+          <label>即期匯率 (TWD)</label>
+          <input type="number" id="fr-spot-${cur}" value="${spot}" placeholder="自動抓取或手動輸入" step="0.0001"
+            oninput="updateCashPreview('${cur}')">
+        </div>
+        <div class="form-group">
+          <label>現金點差 (+TWD)</label>
+          <input type="number" id="fr-spread-${cur}" value="${spread}" placeholder="0.5" step="0.01" min="0"
+            oninput="updateCashPreview('${cur}')">
+        </div>
+        <div class="form-group">
+          <label>現金匯率 (估算)</label>
+          <input type="number" id="fr-cash-${cur}" value="${cash}" placeholder="即期＋點差" step="0.0001" style="background:var(--gold-pale);color:var(--amber)" readonly>
+        </div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('forex-rate-inputs').innerHTML=html;
+  if(!keepOpen) openModal('forex-rate-modal');
+}
+
+function updateCashPreview(cur){
+  const spot=parseFloat(document.getElementById('fr-spot-'+cur)?.value)||0;
+  const spread=parseFloat(document.getElementById('fr-spread-'+cur)?.value)||0;
+  const cashEl=document.getElementById('fr-cash-'+cur);
+  if(cashEl) cashEl.value=spot?(spot+spread).toFixed(4):'';
+}
+
+function saveForexRates(){
+  const holdings=getForexHoldings();
+  const currencies=[...new Set(holdings.map(h=>h.currency))];
+  currencies.forEach(cur=>{
+    const spot=parseFloat(document.getElementById('fr-spot-'+cur)?.value);
+    const spread=parseFloat(document.getElementById('fr-spread-'+cur)?.value);
+    if(spot>0){
+      db.forexSpotRates[cur]=spot;
+      db.forexRates[cur]=spot; 
+    }
+    if(!isNaN(spread)&&spread>=0){
+      db.cashSpread[cur]=spread;
+      if(spot>0) db.forexCashRates[cur]=spot+spread;
+    }
+  });
+  save();closeModal('forex-rate-modal');renderAll();toast('匯率已更新');
+}
+
+function getFundHoldings(){
+  const h={};
+  db.fund.forEach(r=>{
+    if(!h[r.name])h[r.name]={name:r.name,units:0,cost:0,lastNav:0};
+    const x=h[r.name];
+    if(r.type==='buy'){x.units+=r.units;x.cost+=r.amount;x.lastNav=r.nav;}
+    else{x.units-=r.units;x.cost-=r.amount;x.lastNav=r.nav;}
+  });
+  return Object.values(h).filter(h=>h.units>0.0001);
+}
+
+function addFund(){
+  const date=document.getElementById('fund-date').value;
+  const name=document.getElementById('fund-name').value.trim();
+  const type=document.getElementById('fund-type').value;
+  const amount=parseFloat(document.getElementById('fund-amount').value)||0;
+  const units=parseFloat(document.getElementById('fund-units').value)||0;
+  const nav=parseFloat(document.getElementById('fund-nav').value)||0;
+  const note=document.getElementById('fund-note').value.trim();
+  if(!date||!name||!amount){toast('請填寫必要欄位');return}
+  db.fund.push({id:Date.now(),date:normalizeDate(date),name,type,amount,units,nav,note});
+  db.fund.sort((a,b)=>a.date.localeCompare(b.date));
+  save();closeModal('fund-modal');renderAll();toast('已新增基金記錄');
+}
+
+function renderFund(){
+  const holdings=getFundHoldings();
+  const totalCost=holdings.reduce((s,h)=>s+h.cost,0);
+
+  document.getElementById('fund-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-label">基金投入總成本</div><div class="stat-value">${fmt(totalCost)} TWD</div></div>
+    <div class="stat-card"><div class="stat-label">持有基金檔數</div><div class="stat-value">${holdings.length}</div></div>
+  `;
+
+  let fh='';
+  const fundRows=sortRows([...db.fund],'fund',sortState.fund.col);
+  renderSelectAllCb('fund', fundRows);
+  fundRows.forEach(r=>{
+    const sel=selectedIds.has(r.id)?'row-selected':'';
+    fh+=`<tr data-rid="${r.id}" class="${sel}">
+      ${cbCell('fund',r.id)}
+      <td>${fmtDate(r.date)}</td><td>${r.name}</td>
+      <td><span class="tag ${r.type==='buy'?'tag-in':'tag-out'}">${r.type==='buy'?'申購':'贖回'}</span></td>
+      <td class="td-right">${fmt(r.amount)}</td>
+      <td class="td-right">${fmt(r.units,4)}</td>
+      <td class="td-right">${fmt(r.nav,4)}</td>
+      <td>${r.note||'—'}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteRecord('fund',${r.id})"><i class="ti ti-trash"></i></button></td>
+    </tr>`;
+  });
+  document.getElementById('fund-tbody').innerHTML=fh||'<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:24px">尚無資料</td></tr>';
+
+  let sh='';
+  holdings.forEach(h=>{
+    const estValue=h.units*h.lastNav;
+    sh+=`<tr>
+      <td>${h.name}</td>
+      <td class="td-right">${fmt(h.units,4)}</td>
+      <td class="td-right">${fmt(h.cost)}</td>
+      <td class="td-right">${fmt(estValue)} <span style="font-size:11px;color:var(--text-muted)">(以最後淨值估算)</span></td>
+      <td style="font-size:11px;color:var(--text-muted)">最後淨值 ${fmt(h.lastNav,4)}</td>
+    </tr>`;
+  });
+  document.getElementById('fund-summary-tbody').innerHTML=sh||'<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px">尚無持倉</td></tr>';
+}
+
+function renderDashboard(){
+  let bankTotal=0;
+  db.bank.forEach(r=>{bankTotal+=BANK_IN_TYPES.includes(r.type)?r.amount:-r.amount});
+
+  const fholdings=getForexHoldings();
+  let forexCost=0,forexValue=0;
+  fholdings.forEach(h=>{
+    forexCost+=h.costTWD;
+    const cr=db.forexSpotRates?.[h.currency]||db.forexRates?.[h.currency]; // 【防呆修改】加上 ?.
+    forexValue+=cr?h.amount*cr:h.costTWD;
+  });
+
+  const fndHoldings=getFundHoldings();
+  let fundCost=0,fundValue=0;
+  fndHoldings.forEach(h=>{fundCost+=h.cost;fundValue+=h.units*h.lastNav});
+
+  const stk=(window.StockLedger&&StockLedger.getDashboardData)?StockLedger.getDashboardData():{holdings:[],totalCost:0,totalValue:0};
+  const grandTotal=bankTotal+forexValue+fundValue+stk.totalValue;
+
+  document.getElementById('dash-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-label">資產總覽(估算)</div><div class="stat-value">${fmt(grandTotal)} <span style="font-size:13px">TWD</span></div></div>
+    <div class="stat-card"><div class="stat-label">銀行存款</div><div class="stat-value">${fmt(bankTotal)}</div></div>
+    <div class="stat-card"><div class="stat-label">外匯現值</div><div class="stat-value">${fmt(forexValue)}</div><div class="stat-sub ${(forexValue-forexCost)>=0?'pos':'neg'}">${(forexValue-forexCost)>=0?'+':''}${fmt(forexValue-forexCost)} 損益</div></div>
+    <div class="stat-card"><div class="stat-label">基金估值</div><div class="stat-value">${fmt(fundValue)}</div></div>
+    <div class="stat-card"><div class="stat-label">股票現值</div><div class="stat-value">${fmt(stk.totalValue)}</div><div class="stat-sub" style="color:${(stk.totalValue-stk.totalCost)>=0?'#d6343b':'#1a8f55'}">${(stk.totalValue-stk.totalCost)>=0?'+':''}${fmt(stk.totalValue-stk.totalCost)} 損益</div></div>
+  `;
+
+  const banks={};
+  db.bank.forEach(r=>{
+    if(!banks[r.name])banks[r.name]=0;
+    banks[r.name]+=BANK_IN_TYPES.includes(r.type)?r.amount:-r.amount;
+  });
+  document.getElementById('dash-bank').innerHTML=Object.keys(banks).length?
+    Object.entries(banks).map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-light);font-size:13px"><span>${k}</span><span style="font-weight:600">${fmt(v)}</span></div>`).join('')
+    :'<p style="color:var(--text-muted);font-size:13px">尚無資料</p>';
+
+
+  document.getElementById('dash-forex').innerHTML=fholdings.length?
+    fholdings.map(h=>{const cr=db.forexSpotRates?.[h.currency]||db.forexRates?.[h.currency];const v=cr?h.amount*cr:null;return`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-light);font-size:13px"><span><strong>${h.currency}</strong> ${fmt(h.amount,2)}</span><span>${v?fmt(v)+' TWD':'匯率未設定'}</span></div>`}).join('')
+    :'<p style="color:var(--text-muted);font-size:13px">尚無持倉</p>';
+
+  const stkEl=document.getElementById('dash-stock');
+  if(stkEl){
+    const stkRows=stk.holdings.slice(0,10).map(h=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-light);font-size:13px"><span><strong>${h.code}</strong> ${h.name||''}</span><span style="font-weight:600">${fmt(h.value)}</span></div>`).join('');
+    stkEl.innerHTML=stk.holdings.length
+      ? stkRows+(stk.holdings.length>10?`<div style="padding:6px 0;font-size:12px;color:var(--text-muted)">…另有 ${stk.holdings.length-10} 檔</div>`:'')
+      : '<p style="color:var(--text-muted);font-size:13px">尚無持股</p>';
+  }
+
+  document.getElementById('dash-fund').innerHTML=fndHoldings.length?
+    fndHoldings.map(h=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-light);font-size:13px"><span>${h.name}</span><span style="font-weight:600">${fmt(h.cost)}</span></div>`).join('')
+    :'<p style="color:var(--text-muted);font-size:13px">尚無資料</p>';
+}
+
+function renderAll(){
+  renderDashboard();
+  renderBank();
+  renderForex();
+  renderFund();
+  if(window.StockLedger) StockLedger.render();
+}
+
+function deleteRecord(type,id){
+  if(!confirm('確定刪除此筆記錄？'))return;
+  db[type]=db[type].filter(r=>r.id!==id);
+  save();renderAll();toast('已刪除');
+}
+
+// 強制日期欄位為文字格式，避免 Excel 自動轉換為日期序號
+function makeSheet(rows){
+  if(!rows||rows.length===0) return XLSX.utils.json_to_sheet([{}]);
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const range = XLSX.utils.decode_range(ws['!ref']||'A1');
+  // 找出日期欄（欄名為「日期」）
+  const headers=rows[0]?Object.keys(rows[0]):[];
+  headers.forEach((h,ci)=>{
+    if(h!=='日期') return;
+    for(let ri=range.s.r+1;ri<=range.e.r;ri++){
+      const cell=ws[XLSX.utils.encode_cell({r:ri,c:ci})];
+      if(cell) { cell.t='s'; cell.v=String(cell.v||''); delete cell.w; }
+    }
+  });
+  return ws;
+}
+
+function exportData(){
+  const wb = XLSX.utils.book_new();
+
+  // 各銀行獨立工作表
+  const bankList=getBankList();
+  if(bankList.length===0){
+    XLSX.utils.book_append_sheet(wb, makeSheet([{日期:'',摘要:'',類型:'',金額:'',ID:''}]), '銀行存款');
+  } else {
+    bankList.forEach(bankName=>{
+      const rows=db.bank.filter(r=>r.name===bankName).map(r=>({
+        '日期':fmtDate(r.date),'摘要':r.desc||'',
+        '類型':BANK_TYPE_LABEL[r.type]||r.type,'金額(TWD)':r.amount,'ID':r.id
+      }));
+      const sheetName=bankName.replace(/[:\\\/\?\*\[\]]/g,'').slice(0,28)||'銀行';
+      XLSX.utils.book_append_sheet(wb, makeSheet(rows.length?rows:[{日期:'',摘要:'',類型:'',金額:'',ID:''}]), sheetName);
+    });
+  }
+
+  const forexRows = db.forex.map(r=>({
+    '日期':fmtDate(r.date),'幣別':r.currency,
+    '交易類型':r.transType==='spot'?'即期':'現金',
+    '買賣':r.dir==='buy'?'買入':'賣出',
+    '外幣金額':r.amount,'匯率':r.rate,'備註':r.note||'','ID':r.id
+  }));
+  XLSX.utils.book_append_sheet(wb, makeSheet(forexRows.length?forexRows:[{日期:'',幣別:'',交易類型:'',買賣:'',外幣金額:'',匯率:'',備註:'',ID:''}]), '外匯交易');
+
+  const rateRows = Object.entries(db.forexRates||{}).map(([cur,rate])=>({'幣別':cur,'目前匯率':rate}));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rateRows.length?rateRows:[{幣別:'',目前匯率:''}]), '外匯匯率');
+
+  const fundRows = db.fund.map(r=>({
+    '日期':fmtDate(r.date),'基金名稱':r.name,
+    '類型':r.type==='buy'?'申購':'贖回',
+    '金額(TWD)':r.amount,'單位數':r.units,'淨值':r.nav,'備註':r.note||'','ID':r.id
+  }));
+  XLSX.utils.book_append_sheet(wb, makeSheet(fundRows.length?fundRows:[{日期:'',基金名稱:'',類型:'',金額:'',單位數:'',淨值:'',備註:'',ID:''}]), '基金交易');
+
+  const stockRows = (db.stock&&db.stock.transactions||[]).map(r=>{
+    const i=(window.StockLedger&&StockLedger.getInfo)?StockLedger.getInfo(r.code):{name:'',industry:'',group:'',concept:''};
+    return {'股號':r.code,'名稱':i.name,'行業別':i.industry,'所屬集團':i.group,'概念股':i.concept,
+      '日期':fmtDate(r.date),'買賣':r.type==='buy'?'買進':'賣出','股數':r.shares,'價格':r.price,'手續費':r.fee||0,'備註':r.note||''};
+  });
+  XLSX.utils.book_append_sheet(wb, makeSheet(stockRows.length?stockRows:[{股號:'',名稱:'',行業別:'',所屬集團:'',概念股:'',日期:'',買賣:'',股數:'',價格:'',手續費:'',備註:''}]), '股票交易');
+
+  XLSX.writeFile(wb, '投資理財_'+today()+'.xlsx');
+  toast('已匯出 Excel 檔案');
+}
+
+function importData(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const wb=XLSX.read(ev.target.result,{type:'array'});
+      const newDb={bank:[],forex:[],fund:[],bankAccounts:[],forexRates:{},forexSpotRates:{},forexCashRates:{},cashSpread:{},meta:{version:1}};
+      const bankTypeMap={'收入':'in','支出':'out','利息':'interest','股利':'dividend'};
+
+      // 讀取各銀行工作表（排除已知非銀行的工作表名稱）
+      const NON_BANK_SHEETS=new Set(['外匯交易','外匯匯率','基金交易','股票交易']);
+      wb.SheetNames.forEach(sheetName=>{
+        if(NON_BANK_SHEETS.has(sheetName)) return;
+        const ws=wb.Sheets[sheetName];
+        const rows=XLSX.utils.sheet_to_json(ws)||[];
+        if(rows.length===0) return;
+        // 判斷是否為銀行工作表（有「日期」和「金額(TWD)」欄）
+        const firstRow=rows[0];
+        if(!('金額(TWD)' in firstRow) && !('摘要' in firstRow)) return;
+        // 這是銀行工作表，工作表名稱就是銀行名稱
+        if(!newDb.bankAccounts.includes(sheetName)) newDb.bankAccounts.push(sheetName);
+        rows.forEach(r=>{
+          if(!r['日期']&&!r['金額(TWD)'])return;
+          newDb.bank.push({
+            id:r['ID']||Date.now()+Math.random(),
+            date:excelDateToStr(r['日期']),
+            name:sheetName,
+            desc:r['摘要']||'',
+            type:bankTypeMap[r['類型']]||'in',
+            amount:Number(r['金額(TWD)'])||0
+          });
+        });
+      });
+
+      // 兼容舊格式：單一「銀行存款」工作表
+      if(newDb.bank.length===0 && wb.Sheets['銀行存款']){
+        const ws=wb.Sheets['銀行存款'];
+        (XLSX.utils.sheet_to_json(ws)||[]).forEach(r=>{
+          if(!r['日期']&&!r['銀行'])return;
+          const bname=r['銀行']||'銀行';
+          if(!newDb.bankAccounts.includes(bname)) newDb.bankAccounts.push(bname);
+          newDb.bank.push({
+            id:r['ID']||Date.now()+Math.random(),
+            date:excelDateToStr(r['日期']),
+            name:bname,desc:r['摘要']||'',
+            type:bankTypeMap[r['類型']]||'in',amount:Number(r['金額(TWD)'])||0
+          });
+        });
+      }
+
+      const forexWs=wb.Sheets['外匯交易'];
+      if(forexWs){
+        (XLSX.utils.sheet_to_json(forexWs)||[]).forEach(r=>{
+          if(!r['幣別'])return;
+          newDb.forex.push({id:r['ID']||Date.now()+Math.random(),
+            date:excelDateToStr(r['日期']),
+            currency:r['幣別'],transType:r['交易類型']==='即期'?'spot':'cash',
+            dir:r['買賣']==='買入'?'buy':'sell',
+            amount:Number(r['外幣金額'])||0,rate:Number(r['匯率'])||0,note:r['備註']||''});
+        });
+      }
+
+      const rateWs=wb.Sheets['外匯匯率'];
+      if(rateWs){
+        (XLSX.utils.sheet_to_json(rateWs)||[]).forEach(r=>{
+          if(r['幣別']&&r['目前匯率'])newDb.forexRates[r['幣別']]=Number(r['目前匯率']);
+        });
+      }
+
+      const fundWs=wb.Sheets['基金交易'];
+      if(fundWs){
+        (XLSX.utils.sheet_to_json(fundWs)||[]).forEach(r=>{
+          if(!r['基金名稱'])return;
+          newDb.fund.push({id:r['ID']||Date.now()+Math.random(),
+            date:excelDateToStr(r['日期']),
+            name:r['基金名稱'],type:r['類型']==='申購'?'buy':'sell',
+            amount:Number(r['金額(TWD)'])||0,units:Number(r['單位數'])||0,
+            nav:Number(r['淨值'])||0,note:r['備註']||''});
+        });
+      }
+
+      // 股票交易：有該工作表就覆蓋；沒有就保留現有股票資料（避免舊格式檔案把股票資料清空）
+      const stockWs=wb.Sheets['股票交易'];
+      let stockImported=null;
+      if(stockWs && window.StockLedger && StockLedger.parseRows){
+        stockImported=StockLedger.parseRows(XLSX.utils.sheet_to_json(stockWs)||[]);
+        newDb.stock={transactions:stockImported.transactions,manualInfo:{...((db.stock&&db.stock.manualInfo)||{}),...stockImported.manualInfo}};
+      }else{
+        newDb.stock=db.stock||{transactions:[],manualInfo:{}};
+      }
+
+      if(confirm(`匯入資料：\n銀行 ${newDb.bank.length} 筆（${newDb.bankAccounts.length} 家銀行）\n外匯 ${newDb.forex.length} 筆、基金 ${newDb.fund.length} 筆`+(stockImported?`、股票 ${stockImported.transactions.length} 筆`:'')+`\n\n將覆蓋現有資料，確定繼續？`)){
+        db=newDb;save();currentBank=newDb.bankAccounts[0]||'';renderAll();toast('Excel 匯入成功');
+      }
+    }catch(err){toast('匯入失敗：'+err.message);}
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value='';
+}
+
+document.getElementById('forex-amount').addEventListener('input',updateForexPreview);
+document.getElementById('forex-rate').addEventListener('input',updateForexPreview);
+function updateForexPreview(){
+  const a=parseFloat(document.getElementById('forex-amount').value)||0;
+  const r=parseFloat(document.getElementById('forex-rate').value)||0;
+  document.getElementById('forex-twd-preview').textContent=a&&r?fmt(a*r)+' TWD':'—';
+}
+
+load();renderAll();
+initGoogleAPIs();
+</script>
+<script>
+(function(){
+"use strict";
+
+// ---------------- config ----------------
+var OLD_LOCAL_KEY = "stock_ledger_transactions_v1"; // 舊版獨立股倉的 localStorage 鍵（僅用於一次性搬移）
+var INDUSTRY_CACHE_KEY = "stock_ledger_industry_cache_v1";
+var PROXY = "https://corsproxy.io/?url=";
+function proxied(url){ return PROXY + encodeURIComponent(url); }
+var PROXY_FALLBACK = "https://api.allorigins.win/raw?url=";
+function proxiedFallback(url){ return PROXY_FALLBACK + encodeURIComponent(url); }
+
+// 依序嘗試：直接連線 -> corsproxy.io -> allorigins.win，任一成功即回傳
+async function fetchWithFallback(url){
+  var attempts = [url, proxied(url), proxiedFallback(url)];
+  var lastErr;
+  for(var i=0;i<attempts.length;i++){
+    try{
+      var res = await fetch(attempts[i]);
+      if(!res.ok) throw new Error("HTTP "+res.status);
+      return res;
+    }catch(e){ lastErr = e; }
+  }
+  throw lastErr || new Error("all fetch attempts failed");
+}
+
+function showStatus(text, level){
+  var el = document.getElementById("statusBar");
+  el.textContent = text;
+  el.className = level || "";
+  el.style.display = "block";
+}
+function hideStatus(){
+  document.getElementById("statusBar").style.display = "none";
+}
+
+// ---------------- state ----------------
+var state = {
+  industryMap: {},     // code -> {name, industry}  (auto-fetched, TWSE)
+  quotes: {},           // code -> {price, volume, changePct, ...}
+  currentTab: "holdings",
+  sortKey: null,
+  sortDir: "asc",
+  soldSortKey: null,
+  soldSortDir: "asc"
+};
+
+// 交易紀錄與自訂欄位存放在系統主資料 db.stock（隨系統一起存本機與同步 Google Drive）
+function S(){
+  if(!db.stock || typeof db.stock !== "object") db.stock = { transactions: [], manualInfo: {} };
+  if(!Array.isArray(db.stock.transactions)) db.stock.transactions = [];
+  if(!db.stock.manualInfo || typeof db.stock.manualInfo !== "object") db.stock.manualInfo = {};
+  return db.stock;
+}
+Object.defineProperty(state, "transactions", { get: function(){ return S().transactions; }, set: function(v){ S().transactions = v; } });
+Object.defineProperty(state, "manualInfo", { get: function(){ return S().manualInfo; }, set: function(v){ S().manualInfo = v; } });
+
+function getInfo(code){
+  var manual = state.manualInfo[code] || {};
+  var auto = state.industryMap[code] || {};
+  return {
+    name: (manual.name && manual.name.trim()) ? manual.name.trim() : (auto.name || ""),
+    industry: (manual.industry && manual.industry.trim()) ? manual.industry.trim() : "",
+    group: (manual.group && manual.group.trim()) ? manual.group.trim() : "",
+    concept: (manual.concept && manual.concept.trim()) ? manual.concept.trim() : ""
+  };
+}
+
+function fmt(n, digits){
+  if(n==null || isNaN(n)) return "—";
+  digits = digits==null?2:digits;
+  return n.toLocaleString("zh-TW", {minimumFractionDigits:digits, maximumFractionDigits:digits});
+}
+function clsFor(n){ return n>0?"up":(n<0?"down":""); }
+// 依漲跌幅強度回傳漸層背景色（紅漲／綠跌），幅度達 cap（預設5%）時顏色最深
+function changeGradient(pct, cap){
+  if(pct==null || isNaN(pct) || pct===0) return "";
+  cap = cap || 5;
+  var intensity = Math.min(Math.abs(pct)/cap, 1);
+  var alpha = (0.10 + intensity*0.38).toFixed(2);
+  var rgb = pct > 0 ? "229,72,77" : "47,163,107"; // up=紅 down=綠
+  return "background:rgba("+rgb+","+alpha+");";
+}
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+// 內部存 yyyy-mm-dd（方便排序／date 欄位），畫面一律顯示系統慣用的 yyyy/m/d
+function showDate(s){
+  if(!s) return "—";
+  var m = String(s).match(/^(\d{4})-(\d{1,2})-(\d{1,2})(.*)$/);
+  if(m) return m[1]+"/"+parseInt(m[2],10)+"/"+parseInt(m[3],10)+m[4];
+  return String(s);
+}
+
+// ---------------- persistence（接系統主資料 db.stock） ----------------
+function loadLocal(){
+  try{
+    var ind = localStorage.getItem(INDUSTRY_CACHE_KEY);
+    if(ind){
+      var indParsed = JSON.parse(ind);
+      // cache valid for 7 days
+      if(Date.now() - indParsed.ts < 7*24*3600*1000){ state.industryMap = indParsed.map; }
+    }
+  }catch(e){}
+}
+// 若系統內尚無股票資料，且此瀏覽器留有舊版獨立股倉的資料，一次性搬進來（不刪除舊資料）
+function migrateOldLocal(){
+  var s = S();
+  if(s.transactions.length > 0 || Object.keys(s.manualInfo).length > 0) return;
+  try{
+    var raw = localStorage.getItem(OLD_LOCAL_KEY);
+    if(!raw) return;
+    var p = JSON.parse(raw);
+    var tx = Array.isArray(p) ? p : ((p && p.transactions) || []);
+    var mi = (!Array.isArray(p) && p && p.manualInfo) ? p.manualInfo : {};
+    if(tx.length === 0) return;
+    s.transactions = tx;
+    s.manualInfo = mi;
+    persist();
+    if(typeof toast === "function") toast("已從舊版股倉搬入 " + tx.length + " 筆交易紀錄");
+  }catch(e){ console.warn("migrate old stock ledger failed", e); }
+}
+function persist(){ save(); } // save()＝系統的存本機＋排程同步 Google Drive
+
+// ---------------- TWSE industry map ----------------
+async function fetchIndustryMap(){
+  if(Object.keys(state.industryMap).length>0) return; // already cached
+  try{
+    var res = await fetchWithFallback("https://openapi.twse.com.tw/v1/opendata/t187ap03_L");
+    var data = await res.json();
+    var map = {};
+    data.forEach(function(r){
+      var code = r["公司代號"];
+      if(!code) return;
+      map[code] = { name: r["公司簡稱"] || r["公司名稱"] || "", industry: r["產業別"] || "—" };
+    });
+    state.industryMap = map;
+    localStorage.setItem(INDUSTRY_CACHE_KEY, JSON.stringify({ ts: Date.now(), map: map }));
+    hideStatus();
+  }catch(e){
+    console.warn("industry map fetch failed", e);
+    showStatus("⚠ 公司中文名稱資料載入失敗（三種連線方式皆失敗），股票名稱請手動輸入。若以本機檔案開啟（file://），部分代理服務會拒絕存取——建議改用 GitHub Pages 或本機伺服器（如 VS Code Live Server）開啟。既有持股資料不受影響。", "warn");
+  }
+}
+
+// ---------------- Yahoo quotes ----------------
+function sleep(ms){ return new Promise(function(res){ setTimeout(res, ms); }); }
+
+function isoDate(d){ return d.toISOString().slice(0,10); }
+
+// FinMind 的 TaiwanStockPrice 資料集同時涵蓋上市與上櫃，不需要像 Yahoo 那樣猜 .TW / .TWO 後綴；
+// 資料為每日收盤後更新（非盤中即時），但不受個別即時報價來源斷線影響，穩定性較高。
+// ---- 技術訊號：黃金交叉／死亡交叉（用收盤價、最高、最低價自行計算） ----
+var SIGNAL_WINDOW = 5; // 只標示「最近幾個交易日內」發生的交叉
+function smaSeries(arr, n){
+  var out = new Array(arr.length).fill(null), sum = 0;
+  for(var i=0;i<arr.length;i++){
+    sum += arr[i];
+    if(i >= n) sum -= arr[i-n];
+    if(i >= n-1) out[i] = sum/n;
+  }
+  return out;
+}
+function emaSeries(arr, n){
+  var out = new Array(arr.length).fill(null), k = 2/(n+1), prev = null;
+  for(var i=0;i<arr.length;i++){
+    if(arr[i] == null){ out[i] = prev; continue; }
+    prev = (prev == null) ? arr[i] : arr[i]*k + prev*(1-k);
+    out[i] = prev;
+  }
+  return out;
+}
+// 台灣慣用 KD：RSV 以 n 日高低價計算，K=2/3 前K+1/3 RSV，D=2/3 前D+1/3 K，初值 50
+function kdSeries(highs, lows, closes, n){
+  var K = new Array(closes.length).fill(null), D = new Array(closes.length).fill(null);
+  var pk = 50, pd = 50;
+  for(var i=0;i<closes.length;i++){
+    if(i < n-1) continue;
+    var hh = -Infinity, ll = Infinity;
+    for(var j=i-n+1;j<=i;j++){ if(highs[j] > hh) hh = highs[j]; if(lows[j] < ll) ll = lows[j]; }
+    var rsv = (hh === ll) ? 50 : (closes[i]-ll)/(hh-ll)*100;
+    var k = (pk*2 + rsv)/3, d = (pd*2 + k)/3;
+    K[i] = k; D[i] = d; pk = k; pd = d;
+  }
+  return { k: K, d: D };
+}
+// fast 由下往上穿越 slow ＝ 黃金交叉；由上往下穿越 ＝ 死亡交叉；只看最近 SIGNAL_WINDOW 根 K 棒，回傳最近一次
+function detectCross(fast, slow, dates){
+  var n = fast.length;
+  for(var i=n-1; i>=Math.max(1, n-SIGNAL_WINDOW); i--){
+    if(fast[i]==null || slow[i]==null || fast[i-1]==null || slow[i-1]==null) continue;
+    var d0 = fast[i-1]-slow[i-1], d1 = fast[i]-slow[i];
+    if(d0 <= 0 && d1 > 0) return { type: "golden", date: dates[i], daysAgo: n-1-i };
+    if(d0 >= 0 && d1 < 0) return { type: "death", date: dates[i], daysAgo: n-1-i };
+  }
+  return null; // 資料足夠但近期沒有交叉
+}
+// 回傳 {ma, kd, macd}；某項資料筆數不足時該項為 undefined
+function computeSignals(closes, highs, lows, dates){
+  var sig = {};
+  if(closes.length >= 11){ sig.ma = detectCross(smaSeries(closes,5), smaSeries(closes,10), dates); }
+  if(closes.length >= 10){ var kd = kdSeries(highs, lows, closes, 9); sig.kd = detectCross(kd.k, kd.d, dates); }
+  if(closes.length >= 35){
+    var e12 = emaSeries(closes,12), e26 = emaSeries(closes,26);
+    var dif = closes.map(function(_,i){ return e12[i] - e26[i]; });
+    sig.macd = detectCross(dif, emaSeries(dif,9), dates);
+  }
+  return sig;
+}
+
+async function fetchQuoteOnce(code){
+  var end = new Date();
+  // 抓約150天（約100個交易日）：均線／KD／MACD 需要足夠的歷史資料；同時涵蓋連假讓資料一定抓得到
+  var start = new Date(); start.setDate(start.getDate()-150);
+  var url = "https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id="+code+
+    "&start_date="+isoDate(start)+"&end_date="+isoDate(end);
+  var res = await fetchWithFallback(url);
+  var json = await res.json();
+  if(!json || json.status !== 200 || !Array.isArray(json.data) || json.data.length===0) return null;
+  var rows = json.data.slice().sort(function(a,b){ return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); })
+    .filter(function(r){ return parseFloat(r.close) > 0; });
+  if(rows.length === 0) return null;
+  var last = rows[rows.length-1];
+  var prev = rows.length>1 ? rows[rows.length-2] : null;
+  var price = parseFloat(last.close);
+  if(isNaN(price)) return null;
+  var volume = parseFloat(last.Trading_Volume) || 0;
+  var prevClose = prev ? parseFloat(prev.close) : null;
+  var prevVolume = prev ? (parseFloat(prev.Trading_Volume) || 0) : null;
+  var changePct = (prevClose!=null && !isNaN(prevClose) && prevClose!==0) ? (price-prevClose)/prevClose*100 : null;
+  var volumeChangePct = (prevVolume!=null && !isNaN(prevVolume) && prevVolume!==0) ? (volume-prevVolume)/prevVolume*100 : null;
+  var closes = rows.map(function(r){ return parseFloat(r.close); });
+  var highs = rows.map(function(r){ var v = parseFloat(r.max); return v > 0 ? v : parseFloat(r.close); });
+  var lows = rows.map(function(r){ var v = parseFloat(r.min); return v > 0 ? v : parseFloat(r.close); });
+  var dates = rows.map(function(r){ return r.date; });
+  return {
+    price: price,
+    volume: volume,
+    changePct: changePct,
+    volumeChangePct: volumeChangePct,
+    name: null,
+    date: last.date,
+    signals: computeSignals(closes, highs, lows, dates),
+    updatedAt: Date.now()
+  };
+}
+
+async function fetchQuote(code){
+  // 重試兩次，中間間隔避免服務瞬間過載
+  for(var attempt=0; attempt<2; attempt++){
+    try{
+      var q = await fetchQuoteOnce(code);
+      if(q) return q;
+    }catch(e){}
+    if(attempt===0) await sleep(400);
+  }
+  return null;
+}
+
+var quotesBusy = false;
+var quoteAttempted = {};
+async function refreshQuotesInner(){
+  var holdings = computeHoldingsMap();
+  var codes = Object.keys(holdings); // 含已出清的股票（已出清參考頁也要顯示行情與訊號）
+  var failed = [];
+  // 依序（而非同時平行）請求，並在每筆之間留間隔，降低被免費代理服務限流的機率
+  for(var i=0;i<codes.length;i++){
+    var code = codes[i];
+    showStatus("正在更新股價… ("+(i+1)+"/"+codes.length+") "+code, "warn");
+    try{
+      var q = await fetchQuote(code);
+      if(q){ state.quotes[code] = q; }
+      else { failed.push(code); }
+    }catch(e){ failed.push(code); }
+    if(i < codes.length-1) await sleep(250);
+  }
+  if(failed.length === 0){
+    hideStatus();
+  } else {
+    showStatus("⚠ 以下股票本次無法取得最新股價，暫時沿用上次資料或成本價：" + failed.join("、") + "。若持續失敗，可能是代理服務暫時限流，稍後按「重新整理股價」再試一次。", "warn");
+  }
+}
+
+// ---------------- P&L engine (average cost method) ----------------
+function computeHoldingsMap(){
+  var byCode = {};
+  state.transactions.forEach(function(t){ (byCode[t.code] = byCode[t.code]||[]).push(t); });
+  var out = {};
+  Object.keys(byCode).forEach(function(code){
+    var txs = byCode[code].slice().sort(function(a,b){
+      if(a.date !== b.date) return a.date < b.date ? -1 : 1;
+      return (a.id||"") < (b.id||"") ? -1 : 1;
+    });
+    var shares = 0, totalCost = 0, avgCost = 0, realizedPL = 0;
+    var computed = [];
+    txs.forEach(function(t){
+      var fee = t.fee || 0;
+      if(t.type === "buy"){
+        totalCost += t.shares * t.price + fee;
+        shares += t.shares;
+        avgCost = shares > 0 ? totalCost / shares : 0;
+        computed.push(Object.assign({}, t, { avgCostAtTime: avgCost, txPL: null }));
+      } else {
+        var proceeds = t.shares * t.price - fee;
+        var costBasis = avgCost * t.shares;
+        var txPL = proceeds - costBasis;
+        realizedPL += txPL;
+        totalCost = avgCost * (shares - t.shares);
+        shares -= t.shares;
+        computed.push(Object.assign({}, t, { avgCostAtTime: avgCost, txPL: txPL }));
+      }
+    });
+    out[code] = { shares: shares, avgCost: avgCost, totalCost: totalCost, realizedPL: realizedPL, txs: computed };
+  });
+  return out;
+}
+
+// ---------------- rendering ----------------
+function renderSummary(holdings){
+  var totalCost = 0, totalValue = 0, profitValue = 0, lossValue = 0;
+  Object.keys(holdings).forEach(function(code){
+    var h = holdings[code];
+    if(h.shares <= 0) return;
+    var q = state.quotes[code];
+    var price = (q && q.price!=null) ? q.price : h.avgCost;
+    var value = price * h.shares;
+    var pl = value - h.totalCost;
+    totalCost += h.totalCost;
+    totalValue += value;
+    if(pl > 0) profitValue += value;
+    else if(pl < 0) lossValue += value;
+  });
+  var pl = totalValue - totalCost;
+  var plPct = totalCost > 0 ? pl/totalCost*100 : 0;
+  document.getElementById("sumCost").textContent = fmt(totalCost,0);
+  document.getElementById("sumValue").textContent = fmt(totalValue,0);
+  var plEl = document.getElementById("sumPL");
+  plEl.textContent = (pl>=0?"+":"") + fmt(pl,0);
+  plEl.className = "v " + clsFor(pl);
+  var plPctEl = document.getElementById("sumPLPct");
+  plPctEl.textContent = (plPct>=0?"+":"") + fmt(plPct,2) + "%";
+  plPctEl.className = "v " + clsFor(plPct);
+  var profitEl = document.getElementById("sumProfitValue");
+  profitEl.textContent = fmt(profitValue,0);
+  profitEl.className = "v " + (profitValue>0?"up":"");
+  var lossEl = document.getElementById("sumLossValue");
+  lossEl.textContent = fmt(lossValue,0);
+  lossEl.className = "v " + (lossValue>0?"down":"");
+
+  // 本日上漲／下跌／平盤家數與各自成本總和（只計算有漲跌幅資料的持股）
+  var upCount=0, downCount=0, flatCount=0, upCost=0, downCost=0, flatCost=0;
+  Object.keys(holdings).forEach(function(code){
+    var h = holdings[code];
+    if(h.shares <= 0) return;
+    var q = state.quotes[code];
+    if(!q || q.changePct == null) return;
+    if(q.changePct > 0){ upCount++; upCost += h.totalCost; }
+    else if(q.changePct < 0){ downCount++; downCost += h.totalCost; }
+    else{ flatCount++; flatCost += h.totalCost; }
+  });
+  document.getElementById("sumUpCount").textContent = upCount;
+  document.getElementById("sumUpCost").textContent = "成本總和 " + fmt(upCost,0);
+  document.getElementById("sumDownCount").textContent = downCount;
+  document.getElementById("sumDownCost").textContent = "成本總和 " + fmt(downCost,0);
+  document.getElementById("sumFlatCount").textContent = flatCount;
+  document.getElementById("sumFlatCost").textContent = "成本總和 " + fmt(flatCost,0);
+}
+
+// 訊號排序值：新的黃金交叉最大 → 舊的黃金交叉 → 無交叉(0) → 舊的死亡交叉 → 新的死亡交叉；資料不足一律排最後
+function sigRank(q, key){
+  if(!q || !q.signals || q.signals[key] === undefined) return null;
+  var s = q.signals[key];
+  if(!s) return 0;
+  return s.type === "golden" ? 2 - s.daysAgo/10 : -2 + s.daysAgo/10;
+}
+// 表格內的交叉訊號儲存格：黃金交叉＝紅、死亡交叉＝綠（台股慣例），括號內為交叉發生日
+function signalCellHtml(q, key){
+  var s = q && q.signals ? q.signals[key] : null;
+  if(!s) return '<td style="color:var(--text-faint);">—</td>';
+  var golden = s.type === "golden";
+  return '<td><span class="'+(golden?"up":"down")+'" style="font-weight:600;">'+(golden?"黃金交叉":"死亡交叉")+'</span> ' +
+    '<span style="color:var(--text-faint);font-size:10px;" title="交叉發生日（最近 '+SIGNAL_WINDOW+' 個交易日內）">('+s.date.slice(5).replace("-","/")+')</span></td>';
+}
+
+// 持股總表欄位排序：取值 + 比較
+function sortValueFor(code, key, holdings){
+  var h = holdings[code]; var q = state.quotes[code] || {}; var info = getInfo(code);
+  switch(key){
+    case "code": return code;
+    case "name": return info.name || q.name || "";
+    case "industry": return info.industry || "";
+    case "group": return info.group || "";
+    case "concept": return info.concept || "";
+    case "avgCost": return h.avgCost;
+    case "shares": return h.shares;
+    case "price": return q.price != null ? q.price : null;
+    case "changePct": return q.changePct != null ? q.changePct : null;
+    case "volume": return q.volume != null ? q.volume : null;
+    case "volumeChangePct": return q.volumeChangePct != null ? q.volumeChangePct : null;
+    case "sigMA": return sigRank(q, "ma");
+    case "sigKD": return sigRank(q, "kd");
+    case "sigMACD": return sigRank(q, "macd");
+    case "pl": { var price = (q.price!=null?q.price:h.avgCost); return (price*h.shares) - h.totalCost; }
+    case "plPct": { var price2 = (q.price!=null?q.price:h.avgCost); var pl2 = (price2*h.shares) - h.totalCost; return h.totalCost>0 ? pl2/h.totalCost*100 : 0; }
+    default: return null;
+  }
+}
+function compareSortVals(a, b, dir){
+  var aNull = (a==null || a==="");
+  var bNull = (b==null || b==="");
+  if(aNull && bNull) return 0;
+  if(aNull) return 1; // 空值一律排最後
+  if(bNull) return -1;
+  if(typeof a === "string" || typeof b === "string"){
+    var r = String(a).localeCompare(String(b), "zh-Hant");
+    return dir==="asc" ? r : -r;
+  }
+  var r2 = a - b;
+  return dir==="asc" ? r2 : -r2;
+}
+function updateSortArrows(){
+  Array.prototype.forEach.call(document.querySelectorAll("#holdingsHeadRow th.sortable"), function(th){
+    var arrow = th.querySelector(".arrow");
+    if(!arrow) return;
+    arrow.textContent = (th.getAttribute("data-key")===state.sortKey) ? (state.sortDir==="asc"?" ▲":" ▼") : "";
+  });
+}
+// 已出清參考頁排序：專屬欄位自行取值，其餘欄位沿用持股總表的取值
+function soldSortValueFor(code, key, holdings){
+  var h = holdings[code];
+  switch(key){
+    case "txCount": return h.txs.length;
+    case "firstBuy": { var bs = h.txs.filter(function(t){ return t.type==="buy"; }); return bs.length ? bs[0].date : null; }
+    case "lastSell": { var ss = h.txs.filter(function(t){ return t.type==="sell"; }); return ss.length ? ss[ss.length-1].date : null; }
+    case "realizedPL": return h.realizedPL;
+    case "realizedPct": {
+      var inv = h.txs.reduce(function(sum,t){ return t.type==="buy" ? sum + t.shares*t.price + (t.fee||0) : sum; }, 0);
+      return inv > 0 ? h.realizedPL/inv*100 : 0;
+    }
+    default: return sortValueFor(code, key, holdings);
+  }
+}
+function updateSoldSortArrows(){
+  Array.prototype.forEach.call(document.querySelectorAll("#soldoutHeadRow th.sortable"), function(th){
+    var arrow = th.querySelector(".arrow");
+    if(!arrow) return;
+    arrow.textContent = (th.getAttribute("data-key")===state.soldSortKey) ? (state.soldSortDir==="asc"?" ▲":" ▼") : "";
+  });
+}
+Array.prototype.forEach.call(document.querySelectorAll("#soldoutHeadRow th.sortable"), function(th){
+  th.addEventListener("click", function(){
+    var key = th.getAttribute("data-key");
+    if(state.soldSortKey === key){ state.soldSortDir = state.soldSortDir==="asc" ? "desc" : "asc"; }
+    else { state.soldSortKey = key; state.soldSortDir = "asc"; }
+    updateSoldSortArrows();
+    renderSoldOut(computeHoldingsMap());
+  });
+});
+
+Array.prototype.forEach.call(document.querySelectorAll("#holdingsHeadRow th.sortable"), function(th){
+  th.addEventListener("click", function(){
+    var key = th.getAttribute("data-key");
+    if(state.sortKey === key){ state.sortDir = state.sortDir==="asc" ? "desc" : "asc"; }
+    else { state.sortKey = key; state.sortDir = "asc"; }
+    updateSortArrows();
+    renderHoldings(computeHoldingsMap());
+  });
+});
+
+function renderHoldings(holdings){
+  var body = document.getElementById("holdingsBody");
+  var codes = Object.keys(holdings).filter(function(c){ return holdings[c].shares > 0; });
+  if(state.sortKey){
+    codes.sort(function(a,b){
+      return compareSortVals(sortValueFor(a,state.sortKey,holdings), sortValueFor(b,state.sortKey,holdings), state.sortDir);
+    });
+  }
+  if(codes.length === 0){
+    body.innerHTML = '<tr><td colspan="17" class="empty">尚無持股資料，請先新增交易</td></tr>';
+    return;
+  }
+  body.innerHTML = codes.map(function(code){
+    var h = holdings[code];
+    var q = state.quotes[code] || {};
+    var info = getInfo(code);
+    var price = q.price != null ? q.price : null;
+    var value = (price != null ? price : h.avgCost) * h.shares;
+    var pl = value - h.totalCost;
+    var plPct = h.totalCost > 0 ? pl/h.totalCost*100 : 0;
+    var priceCell = price!=null
+      ? fmt(price) + (q.date ? ' <span style="color:var(--text-faint);font-size:10px;" title="FinMind 資料日期（每日收盤後更新，非盤中即時價）">('+q.date.slice(5).replace("-","/")+')</span>' : '')
+      : '<span style="color:var(--text-faint);" title="無法取得股價，暫以成本價計算損益">'+fmt(h.avgCost)+'*</span>';
+    var priceStyle = changeGradient(q.changePct);
+    var changeText = q.changePct!=null ? (q.changePct>=0?"+":"")+fmt(q.changePct,2)+"%" : "—";
+    var changeStyle = changeGradient(q.changePct);
+    var volChangeText = q.volumeChangePct!=null ? (q.volumeChangePct>=0?"+":"")+fmt(q.volumeChangePct,1)+"%" : "—";
+    return '<tr data-code="'+code+'">' +
+      '<td class="code">'+code+'</td>' +
+      '<td>'+(info.name||q.name||"—")+'</td>' +
+      '<td>'+(info.industry||"—")+'</td>' +
+      '<td>'+(info.group||"—")+'</td>' +
+      '<td>'+(info.concept||"—")+'</td>' +
+      '<td>'+fmt(h.avgCost)+'</td>' +
+      '<td>'+fmt(h.shares,0)+'</td>' +
+      '<td style="'+priceStyle+'">'+priceCell+'</td>' +
+      '<td class="'+clsFor(q.changePct)+'" style="'+changeStyle+'">'+changeText+'</td>' +
+      '<td>'+(q.volume!=null?fmt(q.volume,0):"—")+'</td>' +
+      '<td class="'+clsFor(q.volumeChangePct)+'">'+volChangeText+'</td>' +
+      '<td class="'+clsFor(pl)+'">'+(pl>=0?"+":"")+fmt(pl,0)+'</td>' +
+      '<td class="'+clsFor(plPct)+'">'+(plPct>=0?"+":"")+fmt(plPct,2)+'%</td>' +
+      signalCellHtml(q, "ma") + signalCellHtml(q, "kd") + signalCellHtml(q, "macd") +
+      '<td style="text-align:left;"><button class="btn quick-add-btn" data-code="'+code+'" style="font-size:11px;padding:4px 8px;">＋交易</button></td>' +
+    '</tr>';
+  }).join("");
+  Array.prototype.forEach.call(body.querySelectorAll("tr[data-code]"), function(tr){
+    tr.addEventListener("click", function(){ openDetail(tr.getAttribute("data-code"), holdings); });
+  });
+  Array.prototype.forEach.call(body.querySelectorAll(".quick-add-btn"), function(btn){
+    btn.addEventListener("click", function(e){
+      e.stopPropagation();
+      quickAddForCode(btn.getAttribute("data-code"));
+    });
+  });
+}
+
+function renderSoldOut(holdings){
+  var body = document.getElementById("soldoutBody");
+  var codes = Object.keys(holdings).filter(function(c){ return holdings[c].shares === 0 && holdings[c].txs.length>0; });
+  if(state.soldSortKey){
+    codes.sort(function(a,b){
+      return compareSortVals(soldSortValueFor(a,state.soldSortKey,holdings), soldSortValueFor(b,state.soldSortKey,holdings), state.soldSortDir);
+    });
+  }
+  if(codes.length === 0){
+    body.innerHTML = '<tr><td colspan="20" class="empty">尚無已出清股票</td></tr>';
+    return;
+  }
+  body.innerHTML = codes.map(function(code){
+    var h = holdings[code];
+    var q = state.quotes[code] || {};
+    var info = getInfo(code);
+    var buys = h.txs.filter(function(t){return t.type==="buy";});
+    var sells = h.txs.filter(function(t){return t.type==="sell";});
+    var firstBuy = buys.length ? buys[0].date : "—";
+    var lastSell = sells.length ? sells[sells.length-1].date : "—";
+    var investedTotal = h.txs.reduce(function(sum,t){ return t.type==="buy" ? sum + t.shares*t.price + (t.fee||0) : sum; }, 0);
+    var plPct = investedTotal>0 ? h.realizedPL/investedTotal*100 : 0;
+    return '<tr data-code="'+code+'">' +
+      '<td class="code">'+code+'</td>' +
+      '<td>'+(info.name||"—")+'</td>' +
+      '<td>'+(info.industry||"—")+'</td>' +
+      '<td>'+(info.group||"—")+'</td>' +
+      '<td>'+(info.concept||"—")+'</td>' +
+      '<td>'+h.txs.length+'</td>' +
+      '<td>'+showDate(firstBuy)+'</td>' +
+      '<td>'+showDate(lastSell)+'</td>' +
+      '<td class="'+clsFor(h.realizedPL)+'">'+(h.realizedPL>=0?"+":"")+fmt(h.realizedPL,0)+'</td>' +
+      '<td class="'+clsFor(plPct)+'">'+(plPct>=0?"+":"")+fmt(plPct,2)+'%</td>' +
+      '<td>'+fmt(h.avgCost)+'</td>' +
+      '<td>'+fmt(h.shares,0)+'</td>' +
+      '<td style="'+changeGradient(q.changePct)+'">'+(q.price!=null
+          ? fmt(q.price) + (q.date ? ' <span style="color:var(--text-faint);font-size:10px;" title="FinMind 資料日期（每日收盤後更新，非盤中即時價）">('+q.date.slice(5).replace("-","/")+')</span>' : '')
+          : '<span style="color:var(--text-faint);">—</span>')+'</td>' +
+      '<td class="'+clsFor(q.changePct)+'" style="'+changeGradient(q.changePct)+'">'+(q.changePct!=null?(q.changePct>=0?"+":"")+fmt(q.changePct,2)+"%":"—")+'</td>' +
+      '<td>'+(q.volume!=null?fmt(q.volume,0):"—")+'</td>' +
+      '<td class="'+clsFor(q.volumeChangePct)+'">'+(q.volumeChangePct!=null?(q.volumeChangePct>=0?"+":"")+fmt(q.volumeChangePct,1)+"%":"—")+'</td>' +
+      signalCellHtml(q, "ma") + signalCellHtml(q, "kd") + signalCellHtml(q, "macd") +
+      '<td style="text-align:left;"><button class="btn quick-add-btn" data-code="'+code+'" style="font-size:11px;padding:4px 8px;">＋交易</button></td>' +
+    '</tr>';
+  }).join("");
+  Array.prototype.forEach.call(body.querySelectorAll("tr[data-code]"), function(tr){
+    tr.addEventListener("click", function(){ openDetail(tr.getAttribute("data-code"), holdings); });
+  });
+  Array.prototype.forEach.call(body.querySelectorAll(".quick-add-btn"), function(btn){
+    btn.addEventListener("click", function(e){
+      e.stopPropagation();
+      quickAddForCode(btn.getAttribute("data-code"));
+    });
+  });
+}
+
+function openDetail(code, holdings){
+  var h = holdings[code];
+  var info = getInfo(code);
+  function esc(v){ return (v||"").replace(/"/g,'&quot;'); }
+  document.getElementById("modalTitle").innerHTML =
+    code + "　" +
+    '<input id="modalNameInput" type="text" placeholder="中文名稱" value="'+esc(info.name)+'" style="font-family:var(--body);font-size:16px;background:var(--panel-2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:4px 8px;width:110px;">' +
+    ' <input id="modalIndustryInput" type="text" placeholder="行業別" value="'+esc(info.industry)+'" style="font-family:var(--body);font-size:13px;background:var(--panel-2);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);padding:4px 8px;width:90px;">' +
+    ' <input id="modalGroupInput" type="text" placeholder="所屬集團" value="'+esc(info.group)+'" style="font-family:var(--body);font-size:13px;background:var(--panel-2);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);padding:4px 8px;width:90px;">' +
+    ' <input id="modalConceptInput" type="text" placeholder="概念股" value="'+esc(info.concept)+'" style="font-family:var(--body);font-size:13px;background:var(--panel-2);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);padding:4px 8px;width:90px;">' +
+    ' <button class="btn" id="saveInfoBtn" style="font-size:12px;padding:5px 10px;">儲存</button>';
+  document.getElementById("modalSub").innerHTML =
+    "目前庫存 " + fmt(h.shares,0) + " 股　累積已實現損益 " + (h.realizedPL>=0?"+":"") + fmt(h.realizedPL,0) +
+    ' <button class="btn" id="deleteStockBtn" style="font-size:11px;padding:4px 9px;margin-left:10px;color:var(--up);">刪除此股票所有紀錄</button>';
+  document.getElementById("modalBody").innerHTML = h.txs.slice().reverse().map(function(t){
+    return '<tr>' +
+      '<td style="text-align:left;">'+showDate(t.date)+'</td>' +
+      '<td class="'+(t.type==="buy"?"up":"down")+'">'+(t.type==="buy"?"買進":"賣出")+'</td>' +
+      '<td>'+fmt(t.shares,0)+'</td>' +
+      '<td>'+fmt(t.price)+'</td>' +
+      '<td>'+fmt(t.fee||0,0)+'</td>' +
+      '<td>'+fmt(t.avgCostAtTime)+'</td>' +
+      '<td class="'+(t.txPL==null?"":clsFor(t.txPL))+'">'+(t.txPL==null?"—":(t.txPL>=0?"+":"")+fmt(t.txPL,0))+'</td>' +
+      '<td style="text-align:left;color:var(--text-dim);">'+(t.note?t.note.replace(/</g,"&lt;"):"—")+'</td>' +
+      '<td style="text-align:left;white-space:nowrap;">' +
+        '<button class="btn tx-edit-btn" data-id="'+t.id+'" style="font-size:11px;padding:4px 8px;">編輯</button> ' +
+        '<button class="btn tx-delete-btn" data-id="'+t.id+'" style="font-size:11px;padding:4px 8px;color:var(--up);">刪除</button>' +
+      '</td>' +
+    '</tr>';
+  }).join("");
+  document.getElementById("saveInfoBtn").addEventListener("click", function(){
+    var name = document.getElementById("modalNameInput").value.trim();
+    var industry = document.getElementById("modalIndustryInput").value.trim();
+    var group = document.getElementById("modalGroupInput").value.trim();
+    var concept = document.getElementById("modalConceptInput").value.trim();
+    state.manualInfo[code] = { name: name, industry: industry, group: group, concept: concept };
+    persist();
+    renderAll();
+    openDetail(code, computeHoldingsMap());
+  });
+  document.getElementById("deleteStockBtn").addEventListener("click", function(){
+    if(!confirm("確定要刪除「"+code+"」的所有買賣紀錄嗎？此動作無法復原。")) return;
+    state.transactions = state.transactions.filter(function(t){ return t.code !== code; });
+    delete state.manualInfo[code];
+    persist();
+    document.getElementById("modalBg").classList.remove("show");
+    renderAll();
+  });
+  Array.prototype.forEach.call(document.querySelectorAll(".tx-edit-btn"), function(btn){
+    btn.addEventListener("click", function(){
+      var tx = state.transactions.find(function(t){ return t.id === btn.getAttribute("data-id"); });
+      if(!tx) return;
+      document.getElementById("modalBg").classList.remove("show");
+      enterEditMode(tx);
+    });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll(".tx-delete-btn"), function(btn){
+    btn.addEventListener("click", function(){
+      var id = btn.getAttribute("data-id");
+      if(!confirm("確定要刪除這筆交易紀錄嗎？此動作無法復原。")) return;
+      state.transactions = state.transactions.filter(function(t){ return t.id !== id; });
+      persist();
+      renderAll();
+      var stillHas = state.transactions.some(function(t){ return t.code === code; });
+      if(stillHas) openDetail(code, computeHoldingsMap());
+      else document.getElementById("modalBg").classList.remove("show");
+    });
+  });
+  document.getElementById("modalBg").classList.add("show");
+}
+document.getElementById("modalClose").addEventListener("click", function(){ document.getElementById("modalBg").classList.remove("show"); });
+document.getElementById("modalBg").addEventListener("click", function(e){ if(e.target.id==="modalBg") e.currentTarget.classList.remove("show"); });
+
+function renderAll(){
+  var holdings = computeHoldingsMap();
+  renderSummary(holdings);
+  renderHoldings(holdings);
+  renderSoldOut(holdings);
+}
+
+// ---------------- tabs ----------------
+Array.prototype.forEach.call(document.querySelectorAll("#page-stock .tab"), function(tab){
+  tab.addEventListener("click", function(){
+    Array.prototype.forEach.call(document.querySelectorAll("#page-stock .tab"), function(t){ t.classList.remove("active"); });
+    tab.classList.add("active");
+    var name = tab.getAttribute("data-tab");
+    state.currentTab = name;
+    document.getElementById("holdingsPanel").style.display = name==="holdings" ? "" : "none";
+    document.getElementById("soldoutPanel").style.display = name==="soldout" ? "" : "none";
+    document.getElementById("comparePanel").style.display = name==="compare" ? "" : "none";
+    if(name!=="compare") document.getElementById("cmpResultPanel").style.display = "none";
+  });
+});
+
+// ---------------- form ----------------
+var formEl = document.getElementById("txForm");
+state.editingId = null;
+
+document.getElementById("toggleFormBtn").addEventListener("click", function(){
+  if(state.editingId){ exitEditMode(); }
+  formEl.classList.toggle("show");
+  if(formEl.classList.contains("show")){
+    document.getElementById("fDate").value = new Date().toISOString().slice(0,10);
+  }
+});
+
+// 輸入股票代號離開欄位時，自動帶入目前已知的名稱/行業別/集團/概念股（若查無資料則留空讓使用者自行輸入）
+document.getElementById("fCode").addEventListener("blur", function(){
+  var code = this.value.trim();
+  if(!/^[0-9]{4,6}[A-Z]?$/.test(code)) return;
+  var info = getInfo(code);
+  document.getElementById("fName").value = info.name || "";
+  document.getElementById("fIndustry").value = info.industry || "";
+  document.getElementById("fGroup").value = info.group || "";
+  document.getElementById("fConcept").value = info.concept || "";
+});
+
+function clearForm(){
+  document.getElementById("fCode").value = "";
+  document.getElementById("fShares").value = "";
+  document.getElementById("fPrice").value = "";
+  document.getElementById("fFee").value = "0";
+  document.getElementById("fNote").value = "";
+  document.getElementById("fName").value = "";
+  document.getElementById("fIndustry").value = "";
+  document.getElementById("fGroup").value = "";
+  document.getElementById("fConcept").value = "";
+}
+
+// 從持股總表／已出清參考頁點選「＋交易」時，帶入股號與目前已知資訊，展開新增交易表單
+function quickAddForCode(code){
+  if(state.editingId){ exitEditMode(); }
+  clearForm();
+  document.getElementById("fDate").value = new Date().toISOString().slice(0,10);
+  document.getElementById("fType").value = "buy";
+  document.getElementById("fCode").value = code;
+  var info = getInfo(code);
+  document.getElementById("fName").value = info.name || "";
+  document.getElementById("fIndustry").value = info.industry || "";
+  document.getElementById("fGroup").value = info.group || "";
+  document.getElementById("fConcept").value = info.concept || "";
+  formEl.classList.add("show");
+  formEl.scrollIntoView({ behavior:"smooth", block:"center" });
+  document.getElementById("fShares").focus();
+}
+
+function enterEditMode(tx){
+  state.editingId = tx.id;
+  document.getElementById("fCode").value = tx.code;
+  document.getElementById("fDate").value = tx.date;
+  document.getElementById("fType").value = tx.type;
+  document.getElementById("fShares").value = tx.shares;
+  document.getElementById("fPrice").value = tx.price;
+  document.getElementById("fFee").value = tx.fee || 0;
+  document.getElementById("fNote").value = tx.note || "";
+  var info = getInfo(tx.code);
+  document.getElementById("fName").value = info.name || "";
+  document.getElementById("fIndustry").value = info.industry || "";
+  document.getElementById("fGroup").value = info.group || "";
+  document.getElementById("fConcept").value = info.concept || "";
+  document.getElementById("fCode").disabled = true;
+  document.getElementById("submitTxBtn").textContent = "更新紀錄";
+  document.getElementById("cancelEditWrap").style.display = "";
+  var banner = document.getElementById("editingBanner");
+  banner.textContent = "正在編輯　" + tx.code + "　" + showDate(tx.date) + " 的交易紀錄，股票代號不可修改（如打錯代號請刪除後重新新增）";
+  banner.style.display = "block";
+  formEl.classList.add("show");
+  formEl.scrollIntoView({ behavior:"smooth", block:"center" });
+}
+
+function exitEditMode(){
+  state.editingId = null;
+  document.getElementById("fCode").disabled = false;
+  document.getElementById("submitTxBtn").textContent = "加入紀錄";
+  document.getElementById("cancelEditWrap").style.display = "none";
+  document.getElementById("editingBanner").style.display = "none";
+  clearForm();
+}
+document.getElementById("cancelEditBtn").addEventListener("click", exitEditMode);
+
+document.getElementById("submitTxBtn").addEventListener("click", function(){
+  var code = document.getElementById("fCode").value.trim();
+  var date = document.getElementById("fDate").value;
+  var type = document.getElementById("fType").value;
+  var shares = parseFloat(document.getElementById("fShares").value);
+  var price = parseFloat(document.getElementById("fPrice").value);
+  var fee = parseFloat(document.getElementById("fFee").value) || 0;
+  var note = document.getElementById("fNote").value.trim();
+  var name = document.getElementById("fName").value.trim();
+  var industry = document.getElementById("fIndustry").value.trim();
+  var group = document.getElementById("fGroup").value.trim();
+  var concept = document.getElementById("fConcept").value.trim();
+
+  code = code.toUpperCase();
+  if(!/^[0-9]{4,6}[A-Z]?$/.test(code)){ alert("請輸入正確的股票代號（例如 2330，或 00693U 這類含英文字母尾碼的 ETN/ETF）"); return; }
+  if(!date){ alert("請選擇日期"); return; }
+  if(!shares || shares<=0){ alert("請輸入正確股數"); return; }
+  if(!price || price<=0){ alert("請輸入正確價格"); return; }
+
+  if(type === "sell" && !state.editingId){
+    var holdings = computeHoldingsMap();
+    var current = holdings[code] ? holdings[code].shares : 0;
+    if(shares > current){
+      if(!confirm("賣出股數（"+shares+"）大於目前庫存（"+current+"），確定要繼續嗎？")) return;
+    }
+  }
+
+  if(state.editingId){
+    var idx = state.transactions.findIndex(function(t){ return t.id === state.editingId; });
+    if(idx !== -1){
+      state.transactions[idx] = Object.assign({}, state.transactions[idx], { date:date, type:type, shares:shares, price:price, fee:fee, note:note });
+    }
+  } else {
+    state.transactions.push({ id: uid(), code: code, date: date, type: type, shares: shares, price: price, fee: fee, note: note });
+  }
+
+  if(name || industry || group || concept){
+    state.manualInfo[code] = state.manualInfo[code] || {};
+    if(name) state.manualInfo[code].name = name;
+    if(industry) state.manualInfo[code].industry = industry;
+    if(group) state.manualInfo[code].group = group;
+    if(concept) state.manualInfo[code].concept = concept;
+  }
+
+  persist();
+  var wasEditing = !!state.editingId;
+  if(wasEditing) exitEditMode(); else clearForm();
+
+  ensureQuoteAndIndustry(code).then(renderAll);
+  renderAll();
+});
+
+async function ensureQuoteAndIndustry(code){
+  if(!state.quotes[code]){
+    var q = await fetchQuote(code);
+    if(q) state.quotes[code] = q;
+  }
+  if(!state.industryMap[code]){
+    await fetchIndustryMap();
+  }
+}
+
+// ---------------- Excel export / import ----------------
+function excelSerialToISO(serial){
+  var utcDays = Math.floor(serial - 25569);
+  var utcValue = utcDays * 86400;
+  var d = new Date(utcValue*1000);
+  return d.getUTCFullYear()+"-"+String(d.getUTCMonth()+1).padStart(2,"0")+"-"+String(d.getUTCDate()).padStart(2,"0");
+}
+function normalizeDate(v){
+  if(typeof v === "number") return excelSerialToISO(v);
+  if(typeof v === "string"){
+    var s = v.trim().replace(/\//g,"-");
+    var parts = s.split("-");
+    if(parts.length===3){
+      return parts[0]+"-"+String(parts[1]).padStart(2,"0")+"-"+String(parts[2]).padStart(2,"0");
+    }
+    return s;
+  }
+  return "";
+}
+
+document.getElementById("exportBtn").addEventListener("click", function(){
+  if(typeof XLSX === "undefined"){ alert("Excel 匯出元件載入失敗，請檢查網路連線後重新整理頁面"); return; }
+  var rows = state.transactions.map(function(t){
+    var info = getInfo(t.code);
+    return { 股號: t.code, 名稱: info.name, 行業別: info.industry, 所屬集團: info.group, 概念股: info.concept, 日期: showDate(t.date), 買賣: t.type==="buy"?"買進":"賣出", 股數: t.shares, 價格: t.price, 手續費: t.fee||0, 備註: t.note||"" };
+  });
+  var ws = XLSX.utils.json_to_sheet(rows);
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "交易紀錄");
+  XLSX.writeFile(wb, "股倉交易紀錄_" + new Date().toISOString().slice(0,10) + ".xlsx");
+});
+
+document.getElementById("importBtn").addEventListener("click", function(){
+  document.getElementById("importFile").click();
+});
+document.getElementById("importFile").addEventListener("change", function(e){
+  var file = e.target.files[0];
+  if(!file) return;
+  if(typeof XLSX === "undefined"){ alert("Excel 匯入元件載入失敗，請檢查網路連線後重新整理頁面"); e.target.value=""; return; }
+  var reader = new FileReader();
+  reader.onload = function(evt){
+    try{
+      var wb = XLSX.read(evt.target.result, { type: "array" });
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+      var parsed = [], skipped = 0;
+      rows.forEach(function(r){
+        var code = String(r["股號"] || r["股票代號"] || r["code"] || "").trim();
+        var date = normalizeDate(r["日期"] || r["date"]);
+        var typeRaw = String(r["買賣"] || r["type"] || "").trim();
+        var type = (typeRaw==="買進"||typeRaw.toLowerCase()==="buy") ? "buy" : ((typeRaw==="賣出"||typeRaw.toLowerCase()==="sell") ? "sell" : null);
+        var shares = parseFloat(r["股數"] || r["shares"]);
+        var price = parseFloat(r["價格"] || r["price"]);
+        var fee = parseFloat(r["手續費"] || r["fee"]) || 0;
+        var note = String(r["備註"] || r["note"] || "").trim();
+        var name = String(r["名稱"] || r["name"] || "").trim();
+        var industry = String(r["行業別"] || r["industry"] || "").trim();
+        var group = String(r["所屬集團"] || r["group"] || "").trim();
+        var concept = String(r["概念股"] || r["concept"] || "").trim();
+        if(!code || !date || !type || !shares || !price){ skipped++; return; }
+        parsed.push({ id: uid(), code: code, date: date, type: type, shares: shares, price: price, fee: fee, note: note });
+        if(name || industry || group || concept){
+          state.manualInfo[code] = state.manualInfo[code] || {};
+          if(name) state.manualInfo[code].name = name;
+          if(industry) state.manualInfo[code].industry = industry;
+          if(group) state.manualInfo[code].group = group;
+          if(concept) state.manualInfo[code].concept = concept;
+        }
+      });
+      if(parsed.length === 0){
+        alert("匯入失敗：找不到有效的交易紀錄，請確認欄位名稱為「股號、日期、買賣、股數、價格、手續費」（買賣請填「買進」或「賣出」）");
+        return;
+      }
+      var append = confirm(
+        "解析到 " + parsed.length + " 筆有效紀錄" + (skipped ? "（略過 " + skipped + " 筆格式錯誤）" : "") +
+        "。\n\n按「確定」＝附加到現有紀錄\n按「取消」＝清空後改用匯入的資料"
+      );
+      if(append){
+        state.transactions = state.transactions.concat(parsed);
+      } else {
+        if(!confirm("確定要清空所有現有交易紀錄，改用匯入的資料嗎？此動作無法復原。")) return;
+        state.transactions = parsed;
+      }
+      persist();
+      renderAll();
+      var uniqueCodes = Array.from(new Set(parsed.map(function(p){ return p.code; })));
+      Promise.all(uniqueCodes.map(ensureQuoteAndIndustry)).then(renderAll);
+      alert("匯入完成");
+    }catch(err){
+      alert("匯入失敗：檔案格式無法解析");
+      console.error(err);
+    } finally {
+      e.target.value = "";
+    }
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+document.getElementById("refreshQuoteBtn").addEventListener("click", async function(){
+  var btn = this;
+  btn.disabled = true; btn.textContent = "更新中…";
+  await refreshQuotes();
+  renderAll();
+  saveSnap();
+  btn.disabled = false; btn.textContent = "重新整理股價";
+});
+
+// ---------------- 快照、匯出 JSON/CSV 與比對（比照「選股‧四維聯動」的匯出/比對功能） ----------------
+var SNAP_KEY = "stock_ledger_snaps_v1";
+var dl = function(name, text, mime){
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type: mime }));
+  a.download = name;
+  a.click();
+};
+
+// 取目前持股總表的精簡快照（只收股數>0的持股）
+function currentHoldingsSnapshot(){
+  var holdings = computeHoldingsMap();
+  return Object.keys(holdings).filter(function(c){ return holdings[c].shares > 0; }).map(function(code){
+    var h = holdings[code];
+    var q = state.quotes[code] || {};
+    var info = getInfo(code);
+    var price = q.price != null ? q.price : null;
+    var value = (price != null ? price : h.avgCost) * h.shares;
+    var pl = value - h.totalCost;
+    var plPct = h.totalCost > 0 ? +( (pl/h.totalCost*100).toFixed(2) ) : 0;
+    return {
+      id: code, name: info.name || q.name || "", ind: info.industry || "",
+      group: info.group || "", concept: info.concept || "",
+      shares: h.shares, avgCost: +h.avgCost.toFixed(2),
+      price: price, pl: Math.round(pl), plPct: plPct,
+      quoteDate: q.date || null
+    };
+  });
+}
+
+document.getElementById("exjBtn").addEventListener("click", function(){
+  var stocks = currentHoldingsSnapshot();
+  dl("stock_ledger.json", JSON.stringify({ generated: new Date().toISOString(), stocks: stocks }, null, 1), "application/json");
+});
+document.getElementById("excBtn").addEventListener("click", function(){
+  var stocks = currentHoldingsSnapshot();
+  var header = "股號,名稱,行業別,所屬集團,概念股,股數,成本價,最新股價,損益,損益比";
+  var rows = stocks.map(function(r){
+    return [r.id, r.name, r.ind, r.group, r.concept, r.shares, r.avgCost, r.price, r.pl, r.plPct]
+      .map(function(x){ return '"'+String(x==null?"":x).replace(/"/g,'""')+'"'; }).join(",");
+  });
+  dl("stock_ledger.csv", "\ufeff" + [header].concat(rows).join("\n"), "text/csv");
+});
+
+// slim：存檔用（來自目前畫面）；norm：匯入舊 JSON 時做欄位相容
+function slimSnap(r){ return { id:r.id, name:r.name, ind:r.ind||"", group:r.group||"", concept:r.concept||"", shares:r.shares, avgCost:r.avgCost, price:r.price??null, pl:r.pl, plPct:r.plPct }; }
+function normSnap(s){
+  return {
+    id: s.id, name: s.name || "", ind: s.ind ?? s.industry ?? "",
+    group: s.group ?? "", concept: s.concept ?? "",
+    shares: s.shares ?? 0, avgCost: s.avgCost ?? s.avg_cost ?? 0,
+    price: s.price ?? null, pl: s.pl ?? s.PL ?? 0, plPct: s.plPct ?? s.pl_pct ?? 0
+  };
+}
+
+var SN = [];
+try{ var rawSnap = localStorage.getItem(SNAP_KEY); if(rawSnap) SN = JSON.parse(rawSnap) || []; }catch(e){ SN = []; }
+function saveSnapStore(){ try{ localStorage.setItem(SNAP_KEY, JSON.stringify(SN)); }catch(e){} }
+function fillSnaps(){
+  var opts = SN.map(function(x,i){ return '<option value="'+i+'">'+showDate(x.d)+'（'+x.stocks.length+' 檔）</option>'; }).join("");
+  document.getElementById("cmpOld").innerHTML = opts;
+  document.getElementById("cmpNew").innerHTML = opts;
+  document.getElementById("cmpOld").selectedIndex = Math.max(0, SN.length-2);
+  document.getElementById("cmpNew").selectedIndex = Math.max(0, SN.length-1);
+}
+// 每次重新整理股價完成後自動存一份當日持股快照（同日重跑會覆蓋），最多保留12份
+function saveSnap(){
+  var stocks = currentHoldingsSnapshot();
+  if(stocks.length === 0) return;
+  var d = new Date().toLocaleDateString("sv-SE");
+  SN = SN.filter(function(x){ return x.d !== d; });
+  SN.push({ d: d, stocks: stocks.map(slimSnap) });
+  SN.sort(function(a,b){ return a.d < b.d ? -1 : (a.d > b.d ? 1 : 0); });
+  SN = SN.slice(-12);
+  saveSnapStore();
+  fillSnaps();
+}
+
+document.getElementById("cmpImportFile").addEventListener("change", async function(e){
+  var f = e.target.files[0];
+  if(!f) return;
+  try{
+    var j = JSON.parse(await f.text());
+    var g = (j.generated || "").slice(0,10) || f.name.replace(/\.json$/,"");
+    var d = g;
+    if(SN.some(function(x){ return x.d===d; })) d = g + "(匯入)";
+    SN.push({ d: d, stocks: (j.stocks||[]).map(normSnap) });
+    SN.sort(function(a,b){ return a.d < b.d ? -1 : (a.d > b.d ? 1 : 0); });
+    saveSnapStore();
+    fillSnaps();
+    document.getElementById("cmpMsg").textContent = "已匯入 "+d+"，共 "+(j.stocks||[]).length+" 檔";
+  }catch(err){
+    document.getElementById("cmpMsg").textContent = "無法讀取檔案："+err.message;
+  }
+  e.target.value = "";
+});
+
+var cmpRows = [];
+document.getElementById("cmpGoBtn").addEventListener("click", function(){
+  var msgEl = document.getElementById("cmpMsg");
+  if(SN.length < 2){ msgEl.textContent = "至少需要兩份快照：不同日期各重新整理股價一次，或匯入先前匯出的 JSON。"; return; }
+  var oldIdx = document.getElementById("cmpOld").value, newIdx = document.getElementById("cmpNew").value;
+  var a = SN[oldIdx], b = SN[newIdx];
+  if(!a || !b || a===b){ msgEl.textContent = "請選擇兩份不同的快照"; return; }
+  var A = {}, B = {};
+  a.stocks.forEach(function(x){ A[x.id] = x; });
+  b.stocks.forEach(function(x){ B[x.id] = x; });
+  var ids = Object.keys(Object.assign({}, A, B));
+  cmpRows = ids.map(function(id){
+    var p = A[id], q = B[id], x = q || p;
+    var st, d;
+    if(!p){ st = "新增持股"; d = q.plPct; }
+    else if(!q){ st = "出清"; d = -p.plPct; }
+    else{
+      d = +((q.plPct||0) - (p.plPct||0)).toFixed(2);
+      st = q.shares > p.shares ? "加碼" : (q.shares < p.shares ? "減碼" : "持平");
+    }
+    var pc = (p && q && p.price && q.price) ? (q.price/p.price-1)*100 : null;
+    return {
+      id: id, name: x.name, st: st,
+      sharesOld: p ? p.shares : null, sharesNew: q ? q.shares : null,
+      plPctOld: p ? p.plPct : null, plPctNew: q ? q.plPct : null,
+      d: d, pc: pc
+    };
+  });
+  msgEl.textContent = "舊："+showDate(a.d)+"　新："+showDate(b.d);
+  var counts = ["新增持股","出清","加碼","減碼","持平"].map(function(k){
+    return '<div class="summary-card"><div class="k">'+k+'</div><div class="v">'+cmpRows.filter(function(r){return r.st===k;}).length+'</div></div>';
+  }).join("");
+  document.getElementById("cmpSummary").innerHTML = counts;
+  document.getElementById("cmpResultPanel").style.display = "block";
+  drawCmp();
+});
+
+function sharesChangeText(r){
+  if(r.sharesOld==null) return "新增 "+fmt(r.sharesNew,0)+" 股";
+  if(r.sharesNew==null) return "出清 "+fmt(r.sharesOld,0)+" 股";
+  if(r.sharesNew===r.sharesOld) return fmt(r.sharesOld,0)+" 股（不變）";
+  return fmt(r.sharesOld,0)+" → "+fmt(r.sharesNew,0)+" 股";
+}
+function drawCmp(){
+  var f = document.getElementById("cmpFilter").value;
+  var list = cmpRows.filter(function(r){ return f ? r.st===f : (r.st!=="持平" || Math.abs(r.d)>=1); })
+    .sort(function(a,b){ return Math.abs(b.d) - Math.abs(a.d); });
+  var body = document.getElementById("cmpBody");
+  if(list.length===0){ body.innerHTML = '<tr><td colspan="8" class="empty">沒有符合的項目</td></tr>'; return; }
+  body.innerHTML = list.map(function(r){
+    var tagStyle = r.st==="新增持股" ? "background:var(--up);color:#fff;border-color:var(--up);" :
+                   r.st==="出清" ? "background:var(--panel-2);color:var(--text-faint);" : "";
+    return '<tr>' +
+      '<td class="code">'+r.id+'</td>' +
+      '<td>'+(r.name||"—")+'</td>' +
+      '<td><span class="tag" style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:12px;border:1px solid var(--border);'+tagStyle+'">'+r.st+'</span></td>' +
+      '<td>'+sharesChangeText(r)+'</td>' +
+      '<td>'+(r.plPctOld!=null?(r.plPctOld>=0?"+":"")+fmt(r.plPctOld,2)+"%":"—")+'</td>' +
+      '<td>'+(r.plPctNew!=null?(r.plPctNew>=0?"+":"")+fmt(r.plPctNew,2)+"%":"—")+'</td>' +
+      '<td class="'+clsFor(r.d)+'">'+(r.d>=0?"+":"")+fmt(r.d,2)+'</td>' +
+      '<td class="'+clsFor(r.pc)+'">'+(r.pc==null?"—":(r.pc>=0?"+":"")+fmt(r.pc,2)+"%")+'</td>' +
+    '</tr>';
+  }).join("");
+}
+document.getElementById("cmpFilter").addEventListener("change", drawCmp);
+
+// ---------------- 對外介面（供系統主程式呼叫） ----------------
+function refreshHost(){
+  try{ if(typeof renderDashboard === "function") renderDashboard(); }catch(e){}
+}
+async function refreshQuotes(){
+  quotesBusy = true;
+  try{ await refreshQuotesInner(); }
+  finally{
+    quotesBusy = false;
+    Object.keys(computeHoldingsMap()).forEach(function(c){ quoteAttempted[c] = true; });
+  }
+}
+// 資料來自雲端／匯入而出現新持股時，自動補抓尚無報價的股票（每檔本次只試一次）
+var fetchingMissing = false;
+function maybeFetchMissing(){
+  if(fetchingMissing || quotesBusy) return;
+  var holdings = computeHoldingsMap();
+  var missing = Object.keys(holdings).filter(function(c){ return !state.quotes[c] && !quoteAttempted[c]; }); // 含已出清股票
+  if(missing.length === 0) return;
+  fetchingMissing = true;
+  missing.forEach(function(c){ quoteAttempted[c] = true; });
+  (async function(){
+    try{
+      await fetchIndustryMap();
+      for(var i=0;i<missing.length;i++){
+        try{ var q = await fetchQuote(missing[i]); if(q) state.quotes[missing[i]] = q; }catch(e){}
+        await sleep(250);
+      }
+    } finally {
+      fetchingMissing = false;
+      renderAll();
+      refreshHost();
+    }
+  })();
+}
+
+function getDashboardData(){
+  var holdings = computeHoldingsMap(), list = [], totalCost = 0, totalValue = 0;
+  Object.keys(holdings).forEach(function(code){
+    var h = holdings[code];
+    if(h.shares <= 0) return;
+    var q = state.quotes[code];
+    var price = (q && q.price != null) ? q.price : h.avgCost;
+    var value = price * h.shares;
+    var info = getInfo(code);
+    list.push({ code: code, name: info.name || "", shares: h.shares, cost: h.totalCost, value: value });
+    totalCost += h.totalCost;
+    totalValue += value;
+  });
+  list.sort(function(a,b){ return b.value - a.value; });
+  return { holdings: list, totalCost: totalCost, totalValue: totalValue };
+}
+
+// 系統 Excel 匯入用：把「股票交易」工作表的列轉成交易紀錄
+function parseRows(rows){
+  var tx = [], info = {}, skipped = 0;
+  rows.forEach(function(r){
+    var code = String(r["股號"] || r["股票代號"] || r["code"] || "").trim().toUpperCase();
+    var date = normalizeDate(r["日期"] || r["date"]);
+    var typeRaw = String(r["買賣"] || r["type"] || "").trim();
+    var type = (typeRaw==="買進"||typeRaw.toLowerCase()==="buy") ? "buy" : ((typeRaw==="賣出"||typeRaw.toLowerCase()==="sell") ? "sell" : null);
+    var shares = parseFloat(r["股數"] || r["shares"]);
+    var price = parseFloat(r["價格"] || r["price"]);
+    var fee = parseFloat(r["手續費"] || r["fee"]) || 0;
+    var note = String(r["備註"] || r["note"] || "").trim();
+    if(!code || !date || !type || !shares || !price){ skipped++; return; }
+    tx.push({ id: uid(), code: code, date: date, type: type, shares: shares, price: price, fee: fee, note: note });
+    var name = String(r["名稱"] || r["name"] || "").trim();
+    var industry = String(r["行業別"] || r["industry"] || "").trim();
+    var group = String(r["所屬集團"] || r["group"] || "").trim();
+    var concept = String(r["概念股"] || r["concept"] || "").trim();
+    if(name || industry || group || concept){
+      info[code] = info[code] || {};
+      if(name) info[code].name = name;
+      if(industry) info[code].industry = industry;
+      if(group) info[code].group = group;
+      if(concept) info[code].concept = concept;
+    }
+  });
+  return { transactions: tx, manualInfo: info, skipped: skipped };
+}
+
+// ---------------- 資料還原 ----------------
+function restoreFromBackup(){
+  var list = [];
+  try{ list = JSON.parse(localStorage.getItem("invest_stock_backups") || "[]"); }catch(e){}
+  if(!list.length){ alert("目前沒有自動備份。\n\n（連結 Google Drive 時，若本機與雲端的股票資料不同而被其中一方取代，才會產生備份。）\n也可以改選 2 匯入舊版股倉在 Google Drive 的資料，或用「匯入 Excel」。"); return; }
+  var msg = list.map(function(b,i){ return (i+1)+".  "+new Date(b.ts).toLocaleString("zh-TW")+"　"+b.count+" 筆　"+b.reason; }).join("\n");
+  var n = parseInt(prompt("可還原的備份（輸入編號）：\n\n"+msg, "1"), 10);
+  if(!n || !list[n-1]) return;
+  var b = list[n-1];
+  if(!confirm("要用這份備份（"+b.count+" 筆）取代目前的股票交易資料嗎？\n目前的資料會先存成一份備份。")) return;
+  backupStock(S(), "還原備份前的資料");
+  db.stock = JSON.parse(JSON.stringify(b.stock));
+  persist(); renderAll(); maybeFetchMissing(); refreshHost();
+  alert("已還原 "+b.count+" 筆股票交易。");
+}
+async function importOldStandaloneDrive(){
+  if(typeof accessToken === "undefined" || !accessToken){ alert("請先連結 Google Drive 再使用此功能。"); return; }
+  try{
+    var r = await gapi.client.request({ path: "https://www.googleapis.com/drive/v3/files", params: { spaces: "appDataFolder", q: "name='stock_ledger_data.json'", fields: "files(id,name)" } });
+    var files = r.result.files;
+    if(!files || !files.length){ alert("在這個 Google 帳號的雲端找不到舊版股倉的資料檔（stock_ledger_data.json）。"); return; }
+    var resp = await gapi.client.request({ path: "https://www.googleapis.com/drive/v3/files/"+files[0].id, params: { alt: "media" } });
+    var old = JSON.parse(resp.body);
+    var tx = Array.isArray(old.transactions) ? old.transactions : [];
+    var mi = (old.manualInfo && typeof old.manualInfo === "object") ? old.manualInfo : {};
+    if(tx.length === 0){ alert("舊版股倉的雲端檔裡沒有交易紀錄。"); return; }
+    var cur = S();
+    if(cur.transactions.length > 0){
+      if(!confirm("舊版股倉雲端檔有 "+tx.length+" 筆交易；目前有 "+cur.transactions.length+" 筆。\n\n按「確定」＝合併進目前資料（相同的紀錄不會重複，目前資料會先備份）\n按「取消」＝不匯入")) return;
+      backupStock(cur, "匯入舊版股倉前的資料");
+      var ids = {};
+      cur.transactions.forEach(function(t){ ids[t.id] = 1; });
+      tx.forEach(function(t){ if(!ids[t.id]) cur.transactions.push(t); });
+      Object.keys(mi).forEach(function(k){ if(!cur.manualInfo[k]) cur.manualInfo[k] = mi[k]; });
+    } else {
+      db.stock = { transactions: tx, manualInfo: mi };
+    }
+    persist(); renderAll(); maybeFetchMissing(); refreshHost();
+    alert("已匯入舊版股倉資料，目前共 "+S().transactions.length+" 筆交易。");
+  }catch(e){
+    alert("讀取舊版股倉雲端資料失敗："+((e && e.result && e.result.error && e.result.error.message) || (e && e.message) || "未知錯誤"));
+  }
+}
+document.getElementById("restoreBtn").addEventListener("click", function(){
+  var c = prompt("資料還原：\n1 ＝ 從自動備份還原（連結 Google Drive 時被取代的資料）\n2 ＝ 匯入舊版股倉（獨立網頁）存在 Google Drive 的資料\n\n請輸入 1 或 2", "1");
+  if(c === "1") restoreFromBackup();
+  else if(c === "2") importOldStandaloneDrive();
+});
+
+var inited = false;
+function init(){
+  if(inited) return;
+  inited = true;
+  loadLocal();
+  migrateOldLocal();
+  renderAll();
+  fillSnaps();
+  quotesBusy = true; // 開機期間先擋掉自動補抓，避免與下面的整批更新重複請求
+  fetchIndustryMap()
+    .then(function(){ return refreshQuotes(); })
+    .then(function(){ renderAll(); saveSnap(); refreshHost(); maybeFetchMissing(); })
+    .catch(function(e){ quotesBusy = false; console.warn("stock ledger boot failed", e); });
+}
+
+window.StockLedger = {
+  init: init,
+  render: function(){ renderAll(); maybeFetchMissing(); },
+  getDashboardData: getDashboardData,
+  getInfo: getInfo,
+  parseRows: parseRows
+};
+init();
+
+})();
+</script>
+</body>
+</html>
